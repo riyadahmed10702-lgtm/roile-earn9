@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Roile Earn9</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Firebase Compat CDN v9.23.0 (আপনার কনফিগ অনুযায়ী) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- ========== SPLASH SCREEN ========== -->
+  <div id="screen-splash" class="screen active">
+    <div class="splash-content">
+      <div class="splash-logo">R</div>
+      <h1 class="splash-title">Roile Earn9</h1>
+      <p class="splash-tagline">টাস্ক সম্পন্ন করুন, আয় শুরু করুন</p>
+      <div class="splash-loader">
+        <div class="loader-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== LOGIN SCREEN ========== -->
+  <div id="screen-login" class="screen">
+    <div class="auth-container">
+      <div class="auth-header">
+        <div class="auth-logo">R</div>
+        <h2>লগইন করুন</h2>
+        <p>আপনার অ্যাকাউন্টে প্রবেশ করুন</p>
+      </div>
+      <div class="auth-card">
+        <div class="input-group">
+          <label>ইমেইল</label>
+          <input type="email" id="loginEmail" placeholder="example@gmail.com" autocomplete="email">
+        </div>
+        <div class="input-group">
+          <label>পাসওয়ার্ড</label>
+          <input type="password" id="loginPassword" placeholder="আপনার পাসওয়ার্ড" autocomplete="current-password">
+        </div>
+        <div id="loginError" class="error-box hidden"></div>
+        <button id="btnLogin" class="btn btn-primary btn-block">লগইন</button>
+        <div class="divider"><span>অথবা</span></div>
+        <!-- Google button will be injected by app.js -->
+        <p class="auth-switch">অ্যাকাউন্ট নেই? <a href="#" id="linkToRegister">রেজিস্টার করুন</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== REGISTER SCREEN ========== -->
+  <div id="screen-register" class="screen">
+    <div class="auth-container">
+      <div class="auth-header">
+        <div class="auth-logo">R</div>
+        <h2>রেজিস্টার করুন</h2>
+        <p>নতুন অ্যাকাউন্ট তৈরি করুন</p>
+      </div>
+      <div class="auth-card">
+        <div class="input-group">
+          <label>পূর্ণ নাম</label>
+          <input type="text" id="regName" placeholder="আপনার নাম" autocomplete="name">
+        </div>
+        <div class="input-group">
+          <label>ইমেইল</label>
+          <input type="email" id="regEmail" placeholder="example@gmail.com" autocomplete="email">
+        </div>
+        <div class="input-group">
+          <label>মোবাইল নম্বর</label>
+          <input type="tel" id="regPhone" placeholder="01XXXXXXXXX" autocomplete="tel">
+        </div>
+        <div class="input-group">
+          <label>পাসওয়ার্ড</label>
+          <input type="password" id="regPassword" placeholder="কমপক্ষে ৬ অক্ষর" autocomplete="new-password">
+        </div>
+        <div id="regError" class="error-box hidden"></div>
+        <button id="btnRegister" class="btn btn-primary btn-block">রেজিস্টার</button>
+        <div class="divider"><span>অথবা</span></div>
+        <!-- Google button will be injected by app.js -->
+        <p class="auth-switch">অ্যাকাউন্ট আছে? <a href="#" id="linkToLogin">লগইন করুন</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Part 2 এখানে যুক্ত হবে (মেইন অ্যাপ, ড্যাশবোর্ড, টাস্ক, উইথড্র, হিস্ট্রি, বটম নেভigation) -->
+  <!-- ========== MAIN APP WRAPPER ========== -->
+  <div id="screen-app" class="screen">
+
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="header-logo">R</div>
+        <div class="header-info">
+          <h3 class="header-name" id="headerName">ব্যবহারকারী</h3>
+          <span class="header-status" id="headerStatus">সক্রিয়</span>
+        </div>
+      </div>
+      <button id="btnLogout" class="btn-icon" title="লগআউট">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <main class="app-content">
+
+      <!-- ===== DASHBOARD PAGE ===== -->
+      <section id="page-dashboard" class="page active">
+        <!-- Balance Card -->
+        <div class="balance-card">
+          <div class="balance-glow"></div>
+          <div class="balance-header">
+            <span class="balance-label">বর্তমান ব্যালেন্স</span>
+            <span class="balance-badge">
+              <span class="live-dot"></span> লাইভ
+            </span>
+          </div>
+          <div class="balance-amount">
+            <span class="currency">৳</span><span id="dashBalance">0.00</span>
+          </div>
+          <div class="balance-stats">
+            <div class="stat-item">
+              <span class="stat-label">মোট আয়</span>
+              <span class="stat-value" id="dashTotalEarned">৳0.00</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-label">মোট উইথড্র</span>
+              <span class="stat-value" id="dashTotalWithdrawn">৳0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Info Card -->
+        <div class="info-card">
+          <div class="info-row">
+            <div class="info-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div class="info-text">
+              <span class="info-label">ইমেইল</span>
+              <span class="info-value" id="dashEmail">-</span>
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <div class="info-text">
+              <span class="info-label">মোবাইল</span>
+              <span class="info-value" id="dashPhone">-</span>
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <div class="info-text">
+              <span class="info-label">ভূমিকা</span>
+              <span class="info-value" id="dashRole">ব্যবহারকারী</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notice Board -->
+        <div class="notice-card">
+          <div class="notice-head">
+            <div class="notice-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+            </div>
+            <h4>নোটিশ বোর্ড</h4>
+          </div>
+          <p id="dashNotice" class="notice-text">লোড হচ্ছে...</p>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <button class="quick-btn" data-nav="tasks">
+            <div class="quick-icon quick-icon-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <span>টাস্ক শুরু</span>
+          </button>
+          <button class="quick-btn" data-nav="withdraw">
+            <div class="quick-icon quick-icon-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+            </div>
+            <span>উইথড্র</span>
+          </button>
+          <button class="quick-btn" data-nav="history">
+            <div class="quick-icon quick-icon-amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <span>হিস্ট্রি</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ===== TASKS PAGE ===== -->
+      <section id="page-tasks" class="page">
+        <div class="page-head">
+          <h2>উপলব্ধ টাস্ক</h2>
+          <p>টাস্ক সম্পন্ন করে রিওয়ার্ড পান</p>
+        </div>
+        <div id="tasksList" class="tasks-list">
+          <div class="empty-state">
+            <div class="empty-spinner"></div>
+            <p>টাস্ক লোড হচ্ছে...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== TASK VIEWER PAGE ===== -->
+      <section id="page-task-viewer" class="page">
+        <div class="page-head">
+          <button id="btnBackFromTask" class="btn-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            ফিরে যান
+          </button>
+        </div>
+        <div class="task-viewer-card">
+          <h3 id="viewerTitle" class="viewer-title">টাস্ক</h3>
+          <p id="viewerDesc" class="viewer-desc">বিবরণ</p>
+
+          <div class="timer-wrap">
+            <svg class="timer-svg" viewBox="0 0 120 120">
+              <circle class="timer-track" cx="60" cy="60" r="52"/>
+              <circle class="timer-progress" id="timerProgress" cx="60" cy="60" r="52"/>
+            </svg>
+            <div class="timer-text">
+              <span id="timerNumber">30</span>
+              <small>সেকেন্ড</small>
+            </div>
+          </div>
+
+          <div class="viewer-actions">
+            <button id="btnOpenLink" class="btn btn-info btn-block">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              টাস্ক ওপেন করুন
+            </button>
+            <button id="btnClaim" class="btn btn-primary btn-block" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20 6L9 17l-5-5"/></svg>
+              রিওয়ার্ড ক্লেইম করুন
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== WITHDRAW PAGE ===== -->
+      <section id="page-withdraw" class="page">
+        <div class="page-head">
+          <h2>উইথড্র রিকোয়েস্ট</h2>
+          <p>নূন্যতম ৳50 উত্তোলন করা যাবে</p>
+        </div>
+
+        <div class="withdraw-card">
+          <div class="withdraw-balance">
+            <span>উপলব্ধ ব্যালেন্স</span>
+            <strong>৳<span id="wdBalance">0.00</span></strong>
+          </div>
+
+          <div class="input-group">
+            <label>পেমেন্ট মেথড</label>
+            <div class="method-select">
+              <button class="method-btn active" data-method="bkash">
+                <span class="method-dot" style="background:#e2136e"></span> বিকাশ
+              </button>
+              <button class="method-btn" data-method="nagad">
+                <span class="method-dot" style="background:#f47b20"></span> নগদ
+              </button>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>মোবাইল নম্বর</label>
+            <input type="tel" id="wdNumber" placeholder="01XXXXXXXXX">
+          </div>
+
+          <div class="input-group">
+            <label>পরিমাণ (৳)</label>
+            <input type="number" id="wdAmount" placeholder="50" min="50">
+          </div>
+
+          <div id="wdMessage" class="error-box hidden"></div>
+
+          <button id="btnWithdraw" class="btn btn-primary btn-block">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+            রিকোয়েস্ট পাঠান
+          </button>
+        </div>
+      </section>
+
+      <!-- ===== HISTORY PAGE ===== -->
+      <section id="page-history" class="page">
+        <div class="page-head">
+          <h2>লেনদেনের ইতিহাস</h2>
+          <p>আপনার সব আয় ও উইথড্র</p>
+        </div>
+
+        <div class="history-tabs">
+          <button class="history-tab active" data-tab="earnings">আয়</button>
+          <button class="history-tab" data-tab="withdrawals">উইথড্র</button>
+        </div>
+
+        <div id="historyList" class="history-list">
+          <div class="empty-state">
+            <p>কোনো তথ্য নেই</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MOD PANEL PAGE (moderators only) ===== -->
+      <section id="page-mod-panel" class="page">
+        <div class="page-head">
+          <h2>মডারেটর প্যানেল</h2>
+          <p>আপনার কাছে assigned উইথড্র রিকোয়েস্ট</p>
+        </div>
+        <div id="modList" class="mod-list">
+          <div class="empty-state">
+            <p>কোনো রিকোয়েস্ট নেই</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-nav="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>হোম</span>
+      </button>
+      <button class="nav-item" data-nav="tasks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span>টাস্ক</span>
+      </button>
+      <button class="nav-item" data-nav="withdraw">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        <span>উইথড্র</span>
+      </button>
+      <button class="nav-item" data-nav="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>হিস্ট্রি</span>
+      </button>
+      <button class="nav-item hidden" id="navModPanel" data-nav="mod-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>মড প্যানেল</span>
+      </button>
+    </nav>
+
+  </div><!-- /screen-app -->
+
+  <!-- ========== COOLDOWN OVERLAY ========== -->
+  <div id="cooldownOverlay" class="overlay hidden">
+    <div class="cooldown-box">
+      <div class="cooldown-ring">
+        <svg viewBox="0 0 100 100">
+          <circle class="cd-track" cx="50" cy="50" r="42"/>
+          <circle class="cd-progress" id="cdProgress" cx="50" cy="50" r="42"/>
+        </svg>
+        <span id="cdNumber">60</span>
+      </div>
+      <h3>একটু অপেক্ষা করুন</h3>
+      <p>পরবর্তী টাস্কের জন্য অপেক্ষা করুন</p>
+    </div>
+  </div>
+
+  <!-- ========== TOAST CONTAINER ========== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
