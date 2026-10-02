@@ -5,14 +5,14 @@
 
 /* Firebase Config */
 const firebaseConfig = {
-  apiKey: "AIzaSyDQP8Llg9OSZ2llMImCx26lhvB_A_TV0g",
+  apiKey: "AIzaSyDQPP8lIg90S2Z1MWImCx261hVb_A-TV0g",
   authDomain: "roile-earn9.firebaseapp.com",
   databaseURL: "https://roile-earn9-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "roile-earn9",
   storageBucket: "roile-earn9.firebasestorage.app",
   messagingSenderId: "408337081103",
   appId: "1:408337081103:web:b722c9328e008f8963947a",
-  measurementId: "G-7HZD4G21NN"
+  measurementId: "G-THZD4G21NN"
 };
 
 let auth = null;
