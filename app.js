@@ -49,8 +49,9 @@ const AppState = {
   currentTimerValue: 0,
   cdInterval: null,
   listeners: { profile: null, notice: null, tasks: null, history: null, modPanel: null },
-  historyTab: 'earnings',
-  _withdrawals: {}
+    historyTab: 'earnings',
+  _withdrawals: {},
+  linkOpened: false
 };
 
 /* Helpers */
@@ -670,11 +671,17 @@ async function handleClaimReward() {
    ============================================================ */
 function setCooldown(seconds) {
   var until = Date.now() + (seconds * 1000);
+  // Firebase-এ সেভ (ডেটা ক্লিয়ার করলেও থাকবে)
+  if (AppState.user) {
+    db.ref('users/' + AppState.user.uid + '/cooldownUntil').set(until).catch(function(){});
+  }
   localStorage.setItem(APP_CONST.cooldownKey, String(until));
 }
 
 function getCooldownRemaining() {
-  var until = Number(localStorage.getItem(APP_CONST.cooldownKey) || 0);
+  var fromDb = (AppState.profile && AppState.profile.cooldownUntil) || 0;
+  var fromLocal = Number(localStorage.getItem(APP_CONST.cooldownKey) || 0);
+  var until = Math.max(fromDb, fromLocal);
   if (!until) return 0;
   var left = Math.ceil((until - Date.now()) / 1000);
   return left > 0 ? left : 0;
