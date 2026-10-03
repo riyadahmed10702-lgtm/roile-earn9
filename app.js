@@ -330,14 +330,8 @@ async function handleGoogleAuth() {
 
   var provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-
   try {
-    if (isMobile) {
-      await auth.signInWithRedirect(provider);
-    } else {
-      await auth.signInWithPopup(provider);
-    }
+  await auth.signInWithPopup(provider);
   } catch (err) {
     console.error('[GoogleAuth]', err);
     var msg = translateGoogleError(err.code);
@@ -374,12 +368,6 @@ async function ensureProfile(user) {
 
   var deviceId = getOrCreateDeviceId();
   var lockInfo = await isDeviceLocked(deviceId, user.uid);
-
-  if (lockInfo.locked) {
-    alert('এই ডিভাইসে ইতিমধ্যে অন্য একটি অ্যাকাউন্ট আছে। এক ডিভাইসে এক অ্যাকাউন্ট।');
-    await auth.signOut();
-    return;
-  }
 
   var now = Date.now();
   var profile = {
