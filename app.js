@@ -626,14 +626,19 @@ function startTaskTimer() {
 /* ============================================================
    CLAIM REWARD
    ============================================================ */
-AppState.currentTask = { id: taskId, title: t.title, desc: t.desc, link: t.link, reward: t.reward };
-AppState.linkOpened = false; // নতুন টাস্কে রিসেট
-$('viewerTitle').textContent = t.title || 'টাস্ক';
-$('viewerDesc').textContent = t.desc || '';
-$('btnClaim').disabled = true;
-navigateTo('task-viewer');
-startTaskTimer();
+async function handleClaimReward() {
+  var btn = $('btnClaim');
+  if (btn.disabled) return;
+  if (!AppState.currentTask || !AppState.user || !AppState.profile) return;
 
+  // লিংক না খুললে claim হবে না
+  if (!AppState.linkOpened) {
+    showToast('প্রথমে "টাস্ক ওপেন করুন" বাটনে ক্লিক করুন।', 'warning');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'প্রসেস হচ্ছে...';
   btn.disabled = true;
   btn.textContent = 'প্রসেস হচ্ছে...';
 
