@@ -582,11 +582,12 @@ function openTaskViewer(taskId) {
   }
 
   AppState.currentTask = { id: taskId, title: t.title, desc: t.desc, link: t.link, reward: t.reward };
-  $('viewerTitle').textContent = t.title || 'টাস্ক';
-  $('viewerDesc').textContent = t.desc || '';
-  $('btnClaim').disabled = true;
-  navigateTo('task-viewer');
-  startTaskTimer();
+AppState.linkOpened = false; // নতুন টাস্কে রিসেট
+$('viewerTitle').textContent = t.title || 'টাস্ক';
+$('viewerDesc').textContent = t.desc || '';
+$('btnClaim').disabled = true;
+navigateTo('task-viewer');
+startTaskTimer();
 }
 
 function startTaskTimer() {
@@ -625,10 +626,13 @@ function startTaskTimer() {
 /* ============================================================
    CLAIM REWARD
    ============================================================ */
-async function handleClaimReward() {
-  var btn = $('btnClaim');
-  if (btn.disabled) return;
-  if (!AppState.currentTask || !AppState.user || !AppState.profile) return;
+AppState.currentTask = { id: taskId, title: t.title, desc: t.desc, link: t.link, reward: t.reward };
+AppState.linkOpened = false; // নতুন টাস্কে রিসেট
+$('viewerTitle').textContent = t.title || 'টাস্ক';
+$('viewerDesc').textContent = t.desc || '';
+$('btnClaim').disabled = true;
+navigateTo('task-viewer');
+startTaskTimer();
 
   btn.disabled = true;
   btn.textContent = 'প্রসেস হচ্ছে...';
@@ -1104,10 +1108,11 @@ function bindEvents() {
     navigateTo('tasks');
   });
 
-  $('btnOpenLink').addEventListener('click', function () {
-    if (!AppState.currentTask || !AppState.currentTask.link) return showToast('লিংক পাওয়া যায়নি', 'error');
-    window.open(AppState.currentTask.link, '_blank', 'noopener,noreferrer');
-  });
+$('btnOpenLink').addEventListener('click', function () {
+  if (!AppState.currentTask || !AppState.currentTask.link) return showToast('লিংক পাওয়া যায়নি', 'error');
+  AppState.linkOpened = true;
+  window.open(AppState.currentTask.link, '_blank', 'noopener,noreferrer');
+});
 
   $('btnClaim').addEventListener('click', handleClaimReward);
 
