@@ -368,7 +368,7 @@ async function ensureProfile(user) {
   if (snap && snap.exists()) return;
 
   var deviceId = getOrCreateDeviceId();
-  var lockInfo = await isDeviceLocked(deviceId, user.uid);
+  
 
   var now = Date.now();
   var profile = {
@@ -633,15 +633,9 @@ async function handleClaimReward() {
 
   // লিংক না খুললে claim হবে না
   if (!AppState.linkOpened) {
-    showToast('প্রথমে "টাস্ক ওপেন করুন" বাটনে ক্লিক করুন।', 'warning');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'প্রসেস হচ্ছে...';
-  btn.disabled = true;
-  btn.textContent = 'প্রসেস হচ্ছে...';
-
+    showToast('প্রথমে "টাস্ক ওপেন করুন" বাটনে ক্লিক করুন।'
+btn.disabled = true;
+btn.textContent = 'প্রসেস হচ্ছে...';
   var task = AppState.currentTask;
   var reward = Number(task.reward) || 0;
   var uid = AppState.user.uid;
