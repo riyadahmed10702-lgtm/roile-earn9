@@ -631,13 +631,17 @@ async function handleClaimReward() {
   if (btn.disabled) return;
   if (!AppState.currentTask || !AppState.user || !AppState.profile) return;
 
-  // লিংক না খুললে claim হবে না
-  if (!AppState.linkOpened) {
-    showToast('প্রথমে "টাস্ক ওপেন করুন" বাটনে ক্লিক করুন।'
+// লিংক না খুললে claim হবে না
+if (!AppState.linkOpened) {
+  showToast('প্রথমে "টাস্ক ওপেন করুন" বাটনে ক্লিক করুন।', 'warning');
+  return;
+}
+
 btn.disabled = true;
 btn.textContent = 'প্রসেস হচ্ছে...';
-  var task = AppState.currentTask;
-  var reward = Number(task.reward) || 0;
+
+var task = AppState.currentTask;
+var reward = Number(task.reward) || 0;
   var uid = AppState.user.uid;
   var now = Date.now();
 
