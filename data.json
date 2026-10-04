@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "notice": "স্বাগতম! টাস্ক সম্পন্ন করে আয় শুরু করুন।",
+    "minWithdraw": 50,
+    "taskDuration": 30,
+    "cooldownDuration": 60
+  },
+  "tasks": {
+    "task1": {
+      "title": "ইউটিউব ভিডিও দেখুন",
+      "desc": "নিচের লিংকে ক্লিক করে ৩০ সেকেন্ড ভিডিও দেখুন",
+      "link": "https://www.youtube.com",
+      "reward": 5,
+      "active": true
+    },
+    "task2": {
+      "title": "ওয়েবসাইট ভিজিট করুন",
+      "desc": "লিংকে ক্লিক করে ওয়েবসাইটটি ঘুরে আসুন",
+      "link": "https://www.google.com",
+      "reward": 3,
+      "active": true
+    }
+  },
+  "admins": {},
+  "moderators": {}
+}
