@@ -788,28 +788,34 @@ async function handleWithdraw() {
       return showError('wdMessage', 'এই মুহূর্তে কোনো মডারেটর নেই। কিছুক্ষণ পর আবার চেষ্টা করুন।');
     }
 
-    var now = Date.now();
-    var wdRef = db.ref('withdrawals').push();
-    var newBalance = balance - amount;
-    await db.ref('users/' + uid + '/balance').set(newBalance);
+var now = Date.now();
+var wdRef = db.ref('withdrawals').push();
+var wdId = wdRef.key;
+var newBalance = balance - amount;
 
-    await wdRef.set({
-      uid: uid,
-      userName: AppState.profile.name || 'ব্যবহারকারী',
-      userEmail: AppState.profile.email || '',
-      userPhone: AppState.profile.phone || '',
-      method: method,
-      number: number,
-      amount: amount,
-      status: 'pending',
-      assignedMod: mod.uid,
-      assignedModName: mod.name,
-      timestamp: now
-    });
+// ✅ ATOMIC OPERATION - তিনটা কাজ একসাথে
+var updates = {};
+updates['users/' + uid + '/balance'] = newBalance;
+updates['withdrawals/' + wdId] = {
+  uid: uid,
+  userName: AppState.profile.name || 'ব্যবহারকারী',
+  userEmail: AppState.profile.email || '',
+  userPhone: AppState.profile.phone || '',
+  method: method,
+  number: number,
+  amount: amount,
+  status: 'pending',
+  assignedMod: mod.uid,
+  assignedModName: mod.name,
+  timestamp: now
+};
 
-    await db.ref('moderators/' + mod.uid + '/pendingCount').transaction(function (cur) {
-      return (Number(cur) || 0) + 1;
-    });
+await db.ref().update(updates);
+
+// pendingCount +1 (এটা ঠিক আছে, কারণ এটি secondary)
+await db.ref('moderators/' + mod.uid + '/pendingCount').transaction(function (cur) {
+  return (Number(cur) || 0) + 1;
+});
 
     showToast('উইথড্র রিকোয়েস্ট সফলভাবে পাঠানো হয়েছে!', 'success');
     $('wdNumber').value = '';
