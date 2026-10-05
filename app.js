@@ -42,14 +42,14 @@ const AppState = {
   user: null,
   profile: null,
   tasks: {},
-  settings: { notice: '', minWithdraw: 50, taskDuration: 30, cooldownDuration: 60 },
+  settings: { notice: '', minWithdraw: 50, taskDuration: 30, cooldownDuration: 60, requiredReferrals: 0 },
   isModerator: false,
   currentTask: null,
   timerInterval: null,
   currentTimerValue: 0,
   cdInterval: null,
-  listeners: { profile: null, notice: null, tasks: null, history: null, modPanel: null },
-    historyTab: 'earnings',
+  listeners: { profile: null, notice: null, tasks: null, history: null, modPanel: null, referral: null },
+  historyTab: 'earnings',
   _withdrawals: {},
   linkOpened: false
 };
