@@ -225,7 +225,145 @@ function detachAllListeners() {
     clearInterval(AppState.cdInterval);
     AppState.cdInterval = null;
   }
-}/* ============================================================
+}
+
+/* ============================================================
+   REFERRAL SYSTEM
+   ============================================================ */
+
+function generateReferralCode(email) {
+  var base = (email || 'user').split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  if (base.length < 3) base = 'USER';
+  var rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return base + '-' + rand;
+}
+
+function updateReferralUI(data) {
+  if (!data) return;
+  var codeEl = $('refCode');
+  if (codeEl) codeEl.textContent = data.referralCode || '---';
+  var countEl = $('refCount');
+  if (countEl) countEl.textContent = data.referralCount || 0;
+  var statusEl = $('refStatus');
+  var subEl = $('refSubtitle');
+  var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
+  var unlocked = data.referralUnlocked || required === 0;
+  if (statusEl) {
+    if (unlocked) {
+      statusEl.textContent = '✅ Unlocked';
+      statusEl.className = 'ref-status unlocked';
+    } else {
+      statusEl.textContent = '🔒 ' + (data.referralCount || 0) + '/' + required;
+      statusEl.className = 'ref-status locked';
+    }
+  }
+  if (subEl) {
+    if (required === 0) subEl.textContent = 'রেফারেল সিস্টেম চালু নেই';
+    else if (unlocked) subEl.textContent = '✅ আপনি withdraw করতে পারবেন';
+    else subEl.textContent = required + ' জন রেফার করলে আনলক হবে';
+  }
+}
+
+function attachReferralListener() {
+  if (!AppState.user) return;
+  var myCode = AppState.profile && AppState.profile.referralCode;
+  if (!myCode) return;
+  if (AppState.listeners.referral && AppState.listeners.referral.ref) {
+    try { AppState.listeners.referral.ref.off('value', AppState.listeners.referral.cb); } catch (e) {}
+  }
+  var ref = db.ref('referrals/' + myCode);
+  var cb = function (snap) {
+    var data = snap.val() || {};
+    var count = Object.keys(data).length;
+    updateReferralUI({
+      referralCode: myCode,
+      referralCount: count,
+      referralUnlocked: AppState.profile ? AppState.profile.referralUnlocked : false
+    });
+    if (AppState.profile && (AppState.profile.referralCount || 0) !== count) {
+      var updates = { referralCount: count };
+      var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
+      if (required > 0 && count >= required && !AppState.profile.referralUnlocked) {
+        updates.referralUnlocked = true;
+      }
+      db.ref('users/' + AppState.user.uid).update(updates).catch(function () {});
+    }
+  };
+  ref.on('value', cb);
+  AppState.listeners.referral = { ref: ref, event: 'value', cb: cb };
+}
+
+/* ============================================================
+   AUTH — REGISTER
+   ============================================================ */}
+
+/* ============================================================
+   REFERRAL SYSTEM
+   ============================================================ */
+
+function generateReferralCode(email) {
+  var base = (email || 'user').split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  if (base.length < 3) base = 'USER';
+  var rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return base + '-' + rand;
+}
+
+function updateReferralUI(data) {
+  if (!data) return;
+  var codeEl = $('refCode');
+  if (codeEl) codeEl.textContent = data.referralCode || '---';
+  var countEl = $('refCount');
+  if (countEl) countEl.textContent = data.referralCount || 0;
+  var statusEl = $('refStatus');
+  var subEl = $('refSubtitle');
+  var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
+  var unlocked = data.referralUnlocked || required === 0;
+  if (statusEl) {
+    if (unlocked) {
+      statusEl.textContent = '✅ Unlocked';
+      statusEl.className = 'ref-status unlocked';
+    } else {
+      statusEl.textContent = '🔒 ' + (data.referralCount || 0) + '/' + required;
+      statusEl.className = 'ref-status locked';
+    }
+  }
+  if (subEl) {
+    if (required === 0) subEl.textContent = 'রেফারেল সিস্টেম চালু নেই';
+    else if (unlocked) subEl.textContent = '✅ আপনি withdraw করতে পারবেন';
+    else subEl.textContent = required + ' জন রেফার করলে আনলক হবে';
+  }
+}
+
+function attachReferralListener() {
+  if (!AppState.user) return;
+  var myCode = AppState.profile && AppState.profile.referralCode;
+  if (!myCode) return;
+  if (AppState.listeners.referral && AppState.listeners.referral.ref) {
+    try { AppState.listeners.referral.ref.off('value', AppState.listeners.referral.cb); } catch (e) {}
+  }
+  var ref = db.ref('referrals/' + myCode);
+  var cb = function (snap) {
+    var data = snap.val() || {};
+    var count = Object.keys(data).length;
+    updateReferralUI({
+      referralCode: myCode,
+      referralCount: count,
+      referralUnlocked: AppState.profile ? AppState.profile.referralUnlocked : false
+    });
+    if (AppState.profile && (AppState.profile.referralCount || 0) !== count) {
+      var updates = { referralCount: count };
+      var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
+      if (required > 0 && count >= required && !AppState.profile.referralUnlocked) {
+        updates.referralUnlocked = true;
+      }
+      db.ref('users/' + AppState.user.uid).update(updates).catch(function () {});
+    }
+  };
+  ref.on('value', cb);
+  AppState.listeners.referral = { ref: ref, event: 'value', cb: cb };
+}
+
+/* ============================================================
    AUTH — REGISTER
    ============================================================ */
 async function handleRegister() {
