@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Panel — Roile Earn9</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- ========== SPLASH ========== -->
+  <div id="admin-splash" class="admin-screen active">
+    <div class="splash-box">
+      <div class="splash-logo">A</div>
+      <h1>Admin Panel</h1>
+      <p>Roile Earn9 — নিয়ন্ত্রণ কেন্দ্র</p>
+      <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- ========== LOGIN ========== -->
+  <div id="admin-login" class="admin-screen">
+    <div class="auth-box">
+      <div class="auth-logo">A</div>
+      <h2>Admin Login</h2>
+      <p>শুধু অনুমোদিত অ্যাডমিনদের জন্য</p>
+
+      <div class="input-group">
+        <label>ইমেইল</label>
+        <input type="email" id="adminEmail" placeholder="admin@example.com">
+      </div>
+      <div class="input-group">
+        <label>পাসওয়ার্ড</label>
+        <input type="password" id="adminPassword" placeholder="পাসওয়ার্ড">
+      </div>
+
+      <div id="adminLoginError" class="msg-box hidden"></div>
+
+      <button id="btnAdminLogin" class="btn btn-primary">লগইন</button>
+
+      <div class="divider"><span>অথবা</span></div>
+
+      <button id="btnAdminGoogle" class="btn-google">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        গুগল দিয়ে লগইন
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== DASHBOARD ========== -->
+  <div id="admin-app" class="admin-screen">
+    <header class="admin-header">
+      <div class="header-left">
+        <div class="header-logo">A</div>
+        <div>
+          <h3 id="adminName">Admin</h3>
+          <span id="adminEmailDisplay" class="admin-email">-</span>
+        </div>
+      </div>
+      <button id="btnAdminLogout" class="btn-icon" title="লগআউট">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </header>
+
+    <nav class="admin-tabs">
+      <button class="admin-tab active" data-tab="dashboard">ড্যাশবোর্ড</button>
+      <button class="admin-tab" data-tab="users">ইউজার</button>
+      <button class="admin-tab" data-tab="tasks">টাস্ক</button>
+      <button class="admin-tab" data-tab="withdrawals">উইথড্র</button>
+      <button class="admin-tab" data-tab="moderators">মডারেটর</button>
+      <button class="admin-tab" data-tab="notice">নোটিশ</button>
+      <button class="admin-tab" data-tab="settings">সেটিংস</button>
+    </nav>
+
+    <main class="admin-content">
+
+      <!-- DASHBOARD -->
+      <section id="tab-dashboard" class="admin-page active">
+        <h2>ড্যাশবোর্ড</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-icon">👥</span>
+            <span class="stat-num" id="statUsers">0</span>
+            <span class="stat-label">মোট ইউজার</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">⏳</span>
+            <span class="stat-num" id="statPendingWd">0</span>
+            <span class="stat-label">Pending উইথড্র</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">💰</span>
+            <span class="stat-num" id="statTotalBalance">৳0</span>
+            <span class="stat-label">মোট ব্যালেন্স</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">📋</span>
+            <span class="stat-num" id="statTasks">0</span>
+            <span class="stat-label">সক্রিয় টাস্ক</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- USERS -->
+      <section id="tab-users" class="admin-page">
+        <h2>ইউজার ম্যানেজমেন্ট</h2>
+        <input type="text" id="userSearch" class="search-input" placeholder="নাম বা ইমেইল সার্চ করুন...">
+        <div id="usersList" class="list-wrap">
+          <div class="empty-state">লোড হচ্ছে...</div>
+        </div>
+      </section>
+
+      <!-- TASKS -->
+      <section id="tab-tasks" class="admin-page">
+        <h2>টাস্ক ম্যানেজার</h2>
+        <button id="btnAddTask" class="btn btn-primary btn-block">+ নতুন টাস্ক যোগ করুন</button>
+        <div id="tasksAdminList" class="list-wrap">
+          <div class="empty-state">লোড হচ্ছে...</div>
+        </div>
+      </section>
+
+      <!-- WITHDRAWALS -->
+      <section id="tab-withdrawals" class="admin-page">
+        <h2>সব উইথড্র রিকোয়েস্ট</h2>
+        <div class="filter-tabs">
+          <button class="filter-btn active" data-filter="all">সব</button>
+          <button class="filter-btn" data-filter="pending">Pending</button>
+          <button class="filter-btn" data-filter="approved">Approved</button>
+          <button class="filter-btn" data-filter="rejected">Rejected</button>
+        </div>
+        <div id="wdAdminList" class="list-wrap">
+          <div class="empty-state">লোড হচ্ছে...</div>
+        </div>
+      </section>
+
+      <!-- MODERATORS -->
+      <section id="tab-moderators" class="admin-page">
+        <h2>মডারেটর ম্যানেজমেন্ট</h2>
+        <div class="info-banner">
+          ইউজার ট্যাব থেকে "Promote" বাটনে ক্লিক করে মডারেটর বানাতে পারবেন।
+        </div>
+        <div id="modsAdminList" class="list-wrap">
+          <div class="empty-state">লোড হচ্ছে...</div>
+        </div>
+      </section>
+
+      <!-- NOTICE -->
+      <section id="tab-notice" class="admin-page">
+        <h2>নোটিশ বোর্ড</h2>
+        <div class="input-group">
+          <label>নোটিশ টেক্সট</label>
+          <textarea id="noticeText" rows="5" placeholder="নোটিশ লিখুন..."></textarea>
+        </div>
+        <button id="btnSaveNotice" class="btn btn-primary btn-block">নোটিশ সেভ করুন</button>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="tab-settings" class="admin-page">
+        <h2>অ্যাপ সেটিংস</h2>
+
+        <div class="input-group">
+          <label>নূন্যতম উইথড্র (৳)</label>
+          <input type="number" id="setMinWithdraw" placeholder="50">
+        </div>
+
+        <div class="input-group">
+          <label>টাস্ক সময় (সেকেন্ড)</label>
+          <input type="number" id="setTaskDuration" placeholder="30">
+        </div>
+
+        <div class="input-group">
+          <label>কুলডাউন (সেকেন্ড)</label>
+          <input type="number" id="setCooldown" placeholder="60">
+        </div>
+
+        <div class="input-group">
+          <label>Required Referrals (Withdraw এর জন্য কতজনকে রেফার করতে হবে)</label>
+          <input type="number" id="setRequiredReferrals" placeholder="0" min="0">
+        </div>
+
+        <button id="btnSaveSettings" class="btn btn-primary btn-block">সেটিংস সেভ করুন</button>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- TASK MODAL -->
+  <div id="taskModal" class="modal hidden">
+    <div class="modal-box">
+      <h3 id="taskModalTitle">নতুন টাস্ক</h3>
+
+      <div class="input-group">
+        <label>টাস্ক টাইটেল</label>
+        <input type="text" id="taskTitle" placeholder="টাস্কের নাম">
+      </div>
+
+      <div class="input-group">
+        <label>বিবরণ</label>
+        <textarea id="taskDesc" rows="3" placeholder="টাস্কের বিবরণ"></textarea>
+      </div>
+
+      <div class="input-group">
+        <label>লিংক</label>
+        <input type="url" id="taskLink" placeholder="https://...">
+      </div>
+
+      <div class="input-group">
+        <label>রিওয়ার্ড (৳)</label>
+        <input type="number" id="taskReward" placeholder="5">
+      </div>
+
+      <div class="input-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="taskActive" checked>
+          সক্রিয়
+        </label>
+      </div>
+
+      <div id="taskModalError" class="msg-box hidden"></div>
+
+      <div class="modal-actions">
+        <button id="btnCancelTask" class="btn btn-ghost">বাতিল</button>
+        <button id="btnSaveTask" class="btn btn-primary">সেভ করুন</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="adminToast" class="toast-container"></div>
+
+  <script src="admin.js"></script>
+</body>
+                                                                                   </html>
