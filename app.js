@@ -290,7 +290,7 @@ function attachReferralListener() {
   };
   ref.on('value', cb);
   AppState.listeners.referral = { ref: ref, event: 'value', cb: cb };
-}
+   }
 /* ============================================================
    AUTH — REGISTER
    ============================================================ */
@@ -943,7 +943,7 @@ async function handleWithdraw() {
     btn.disabled = false;
     btn.textContent = 'রিকোয়েস্ট পাঠান';
   }
-     }
+                   }
 /* ============================================================
    HISTORY
    ============================================================ */
