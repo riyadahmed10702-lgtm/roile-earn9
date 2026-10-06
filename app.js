@@ -174,7 +174,6 @@ function translateGoogleError(code) {
     'auth/redirect-cancelled-by-user': 'রিডাইরেক্ট বাতিল হয়েছে।',
     'auth/internal-error': 'Firebase ইন্টারনাল এরর।'
   };
-  // ⚠️ ডিবাগের জন্য আসল কোড + ডোমেইন দেখাবে
   var origin = (typeof window !== 'undefined' && window.location) ? window.location.origin : 'unknown';
   var msg = map[code] || ('অজানা এরর');
   return msg + ' [code: ' + code + ', domain: ' + origin + ']';
@@ -292,78 +291,9 @@ function attachReferralListener() {
   ref.on('value', cb);
   AppState.listeners.referral = { ref: ref, event: 'value', cb: cb };
 }
-}
-
-/* ============================================================
-   REFERRAL SYSTEM
-   ============================================================ */
-
-function generateReferralCode(email) {
-  var base = (email || 'user').split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-  if (base.length < 3) base = 'USER';
-  var rand = Math.random().toString(36).substring(2, 5).toUpperCase();
-  return base + '-' + rand;
-}
-
-function updateReferralUI(data) {
-  if (!data) return;
-  var codeEl = $('refCode');
-  if (codeEl) codeEl.textContent = data.referralCode || '---';
-  var countEl = $('refCount');
-  if (countEl) countEl.textContent = data.referralCount || 0;
-  var statusEl = $('refStatus');
-  var subEl = $('refSubtitle');
-  var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
-  var unlocked = data.referralUnlocked || required === 0;
-  if (statusEl) {
-    if (unlocked) {
-      statusEl.textContent = '✅ Unlocked';
-      statusEl.className = 'ref-status unlocked';
-    } else {
-      statusEl.textContent = '🔒 ' + (data.referralCount || 0) + '/' + required;
-      statusEl.className = 'ref-status locked';
-    }
-  }
-  if (subEl) {
-    if (required === 0) subEl.textContent = 'রেফারেল সিস্টেম চালু নেই';
-    else if (unlocked) subEl.textContent = '✅ আপনি withdraw করতে পারবেন';
-    else subEl.textContent = required + ' জন রেফার করলে আনলক হবে';
-  }
-}
-
-function attachReferralListener() {
-  if (!AppState.user) return;
-  var myCode = AppState.profile && AppState.profile.referralCode;
-  if (!myCode) return;
-  if (AppState.listeners.referral && AppState.listeners.referral.ref) {
-    try { AppState.listeners.referral.ref.off('value', AppState.listeners.referral.cb); } catch (e) {}
-  }
-  var ref = db.ref('referrals/' + myCode);
-  var cb = function (snap) {
-    var data = snap.val() || {};
-    var count = Object.keys(data).length;
-    updateReferralUI({
-      referralCode: myCode,
-      referralCount: count,
-      referralUnlocked: AppState.profile ? AppState.profile.referralUnlocked : false
-    });
-    if (AppState.profile && (AppState.profile.referralCount || 0) !== count) {
-      var updates = { referralCount: count };
-      var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
-      if (required > 0 && count >= required && !AppState.profile.referralUnlocked) {
-        updates.referralUnlocked = true;
-      }
-      db.ref('users/' + AppState.user.uid).update(updates).catch(function () {});
-    }
-  };
-  ref.on('value', cb);
-  AppState.listeners.referral = { ref: ref, event: 'value', cb: cb };
-}
-
 /* ============================================================
    AUTH — REGISTER
    ============================================================ */
-
 async function handleRegister() {
   clearError('regError');
   var name = ($('regName').value || '').trim();
@@ -392,10 +322,30 @@ async function handleRegister() {
       await auth.signOut().catch(function () {});
       btn.disabled = false;
       btn.textContent = 'রেজিস্টার';
-      return showError('regError', 'এই ডিভাইসে ইতিমধ্যে একটি অ্যাকাউন্ট আছে। এক ডিভাইসে একটিই অ্যাকাউন্ট চলে।');
+      return showError('regError', 'এই ডিভাইসে ইতিমধ্যে একটি অ্যাকাউন্ট আছে।');
     }
 
     var now = Date.now();
+    var myRefCode = generateReferralCode(email);
+    var enteredRefCode = ($('regReferralCode') ? ($('regReferralCode').value || '').trim().toUpperCase() : '');
+    var referrerUid = '';
+
+    if (enteredRefCode) {
+      try {
+        var refSnap = await db.ref('users').orderByChild('referralCode').equalTo(enteredRefCode).once('value');
+        var refData = refSnap.val();
+        if (refData) {
+          var refKeys = Object.keys(refData);
+          for (var ri = 0; ri < refKeys.length; ri++) {
+            if (refKeys[ri] !== createdUser.uid) {
+              referrerUid = refKeys[ri];
+              break;
+            }
+          }
+        }
+      } catch (e) { console.warn('[Referral] lookup failed:', e); }
+    }
+
     await db.ref('users/' + createdUser.uid).set({
       name: name,
       email: email,
@@ -407,6 +357,10 @@ async function handleRegister() {
       banned: false,
       role: 'user',
       provider: 'password',
+      referralCode: myRefCode,
+      referralCount: 0,
+      referralUnlocked: false,
+      referredBy: referrerUid || '',
       createdAt: now,
       lastLogin: now
     });
@@ -415,6 +369,19 @@ async function handleRegister() {
       uid: createdUser.uid,
       createdAt: now
     });
+
+    if (referrerUid) {
+      var referrerCodeSnap = await db.ref('users/' + referrerUid + '/referralCode').once('value');
+      var referrerCode = referrerCodeSnap.val();
+      if (referrerCode) {
+        await db.ref('referrals/' + referrerCode + '/' + createdUser.uid).set({
+          uid: createdUser.uid,
+          name: name,
+          email: email,
+          timestamp: now
+        });
+      }
+    }
 
     try { await createdUser.updateProfile({ displayName: name }); } catch (e) {}
 
@@ -468,7 +435,7 @@ async function handleGoogleAuth() {
   var provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
   try {
-  await auth.signInWithPopup(provider);
+    await auth.signInWithPopup(provider);
   } catch (err) {
     console.error('[GoogleAuth]', err);
     var msg = translateGoogleError(err.code);
@@ -504,9 +471,8 @@ async function ensureProfile(user) {
   if (snap && snap.exists()) return;
 
   var deviceId = getOrCreateDeviceId();
-  
-
   var now = Date.now();
+  var myRefCode = generateReferralCode(user.email || '');
   var profile = {
     name: user.displayName || (user.email ? user.email.split('@')[0] : 'ব্যবহারকারী'),
     email: user.email || '',
@@ -518,6 +484,10 @@ async function ensureProfile(user) {
     banned: false,
     role: 'user',
     provider: user.providerData && user.providerData[0] ? user.providerData[0].providerId : 'google.com',
+    referralCode: myRefCode,
+    referralCount: 0,
+    referralUnlocked: false,
+    referredBy: '',
     createdAt: now,
     lastLogin: now
   };
@@ -530,7 +500,6 @@ async function ensureProfile(user) {
     console.error('[ensureProfile]', e);
   }
 }
-
 /* ============================================================
    REDIRECT RESULT
    ============================================================ */
@@ -596,7 +565,9 @@ function initAuthListener() {
     showScreen('screen-app');
     navigateTo('dashboard');
   });
-}/* ============================================================
+}
+
+/* ============================================================
    PROFILE LISTENER
    ============================================================ */
 function attachProfileListener() {
@@ -628,6 +599,9 @@ function attachProfileListener() {
     $('dashRole').textContent = data.role === 'admin' ? 'অ্যাডমিন' : (data.role === 'moderator' ? 'মডারেটর' : 'ব্যবহারকারী');
     $('wdBalance').textContent = formatMoney(data.balance);
 
+    updateReferralUI(data);
+    attachReferralListener();
+
     if (AppState.historyTab === 'earnings') renderHistory();
   };
 
@@ -650,9 +624,11 @@ function attachNoticeListener() {
       notice: s.notice || 'স্বাগতম! টাস্ক সম্পন্ন করে আয় শুরু করুন।',
       minWithdraw: typeof s.minWithdraw === 'number' ? s.minWithdraw : 50,
       taskDuration: typeof s.taskDuration === 'number' ? s.taskDuration : 30,
-      cooldownDuration: typeof s.cooldownDuration === 'number' ? s.cooldownDuration : 60
+      cooldownDuration: typeof s.cooldownDuration === 'number' ? s.cooldownDuration : 60,
+      requiredReferrals: typeof s.requiredReferrals === 'number' ? s.requiredReferrals : 0
     };
     $('dashNotice').textContent = AppState.settings.notice;
+    updateReferralUI(AppState.profile || {});
   };
 
   ref.on('value', cb);
@@ -718,12 +694,12 @@ function openTaskViewer(taskId) {
   }
 
   AppState.currentTask = { id: taskId, title: t.title, desc: t.desc, link: t.link, reward: t.reward };
-AppState.linkOpened = false; // নতুন টাস্কে রিসেট
-$('viewerTitle').textContent = t.title || 'টাস্ক';
-$('viewerDesc').textContent = t.desc || '';
-$('btnClaim').disabled = true;
-navigateTo('task-viewer');
-startTaskTimer();
+  AppState.linkOpened = false;
+  $('viewerTitle').textContent = t.title || 'টাস্ক';
+  $('viewerDesc').textContent = t.desc || '';
+  $('btnClaim').disabled = true;
+  navigateTo('task-viewer');
+  startTaskTimer();
 }
 
 function startTaskTimer() {
@@ -767,17 +743,16 @@ async function handleClaimReward() {
   if (btn.disabled) return;
   if (!AppState.currentTask || !AppState.user || !AppState.profile) return;
 
-// লিংক না খুললে claim হবে না
-if (!AppState.linkOpened) {
-  showToast('প্রথমে "টাস্ক ওপেন করুন" বাটনে ক্লিক করুন।', 'warning');
-  return;
-}
+  if (!AppState.linkOpened) {
+    showToast('প্রথমে "টাস্ক ওপেন করুন" বাটনে ক্লিক করুন।', 'warning');
+    return;
+  }
 
-btn.disabled = true;
-btn.textContent = 'প্রসেস হচ্ছে...';
+  btn.disabled = true;
+  btn.textContent = 'প্রসেস হচ্ছে...';
 
-var task = AppState.currentTask;
-var reward = Number(task.reward) || 0;
+  var task = AppState.currentTask;
+  var reward = Number(task.reward) || 0;
   var uid = AppState.user.uid;
   var now = Date.now();
 
@@ -814,7 +789,6 @@ var reward = Number(task.reward) || 0;
    ============================================================ */
 function setCooldown(seconds) {
   var until = Date.now() + (seconds * 1000);
-  // Firebase-এ সেভ (ডেটা ক্লিয়ার করলেও থাকবে)
   if (AppState.user) {
     db.ref('users/' + AppState.user.uid + '/cooldownUntil').set(until).catch(function(){});
   }
@@ -903,6 +877,13 @@ async function handleWithdraw() {
   if (!amount || amount < minWd) return showError('wdMessage', 'নূন্যতম ৳' + minWd + ' উত্তোলন করা যাবে।');
   if (amount > balance) return showError('wdMessage', 'পর্যাপ্ত ব্যালেন্স নেই।');
 
+  var requiredRefs = AppState.settings.requiredReferrals || 0;
+  var unlocked = AppState.profile.referralUnlocked || requiredRefs === 0;
+  if (!unlocked) {
+    var have = AppState.profile.referralCount || 0;
+    return showError('wdMessage', 'Withdraw এর জন্য ' + requiredRefs + ' জনকে রেফার করতে হবে। আপনি করেছেন: ' + have + '/' + requiredRefs);
+  }
+
   var btn = $('btnWithdraw');
   btn.disabled = true;
   btn.textContent = 'পাঠানো হচ্ছে...';
@@ -924,34 +905,32 @@ async function handleWithdraw() {
       return showError('wdMessage', 'এই মুহূর্তে কোনো মডারেটর নেই। কিছুক্ষণ পর আবার চেষ্টা করুন।');
     }
 
-var now = Date.now();
-var wdRef = db.ref('withdrawals').push();
-var wdId = wdRef.key;
-var newBalance = balance - amount;
+    var now = Date.now();
+    var wdRef = db.ref('withdrawals').push();
+    var wdId = wdRef.key;
+    var newBalance = balance - amount;
 
-// ✅ ATOMIC OPERATION - তিনটা কাজ একসাথে
-var updates = {};
-updates['users/' + uid + '/balance'] = newBalance;
-updates['withdrawals/' + wdId] = {
-  uid: uid,
-  userName: AppState.profile.name || 'ব্যবহারকারী',
-  userEmail: AppState.profile.email || '',
-  userPhone: AppState.profile.phone || '',
-  method: method,
-  number: number,
-  amount: amount,
-  status: 'pending',
-  assignedMod: mod.uid,
-  assignedModName: mod.name,
-  timestamp: now
-};
+    var updates = {};
+    updates['users/' + uid + '/balance'] = newBalance;
+    updates['withdrawals/' + wdId] = {
+      uid: uid,
+      userName: AppState.profile.name || 'ব্যবহারকারী',
+      userEmail: AppState.profile.email || '',
+      userPhone: AppState.profile.phone || '',
+      method: method,
+      number: number,
+      amount: amount,
+      status: 'pending',
+      assignedMod: mod.uid,
+      assignedModName: mod.name,
+      timestamp: now
+    };
 
-await db.ref().update(updates);
+    await db.ref().update(updates);
 
-// pendingCount +1 (এটা ঠিক আছে, কারণ এটি secondary)
-await db.ref('moderators/' + mod.uid + '/pendingCount').transaction(function (cur) {
-  return (Number(cur) || 0) + 1;
-});
+    await db.ref('moderators/' + mod.uid + '/pendingCount').transaction(function (cur) {
+      return (Number(cur) || 0) + 1;
+    });
 
     showToast('উইথড্র রিকোয়েস্ট সফলভাবে পাঠানো হয়েছে!', 'success');
     $('wdNumber').value = '';
@@ -964,7 +943,8 @@ await db.ref('moderators/' + mod.uid + '/pendingCount').transaction(function (cu
     btn.disabled = false;
     btn.textContent = 'রিকোয়েস্ট পাঠান';
   }
-}/* ============================================================
+     }
+/* ============================================================
    HISTORY
    ============================================================ */
 function attachHistoryListeners() {
@@ -1001,7 +981,7 @@ function renderHistory() {
       .sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
 
     if (items.length === 0) {
-      list.innerHTML = '<div class="empty-state"><p>এখনো কোনো আয় হয়নি। টাস্ক সম্পন্ন করে শুরু করুন।</p></div>';
+      list.innerHTML = '<div class="empty-state"><p>এখনো কোনো আয় হয়নি।</p></div>';
       return;
     }
 
@@ -1217,6 +1197,19 @@ function injectGoogleButtons() {
    BIND EVENTS
    ============================================================ */
 function bindEvents() {
+  // URL থেকে referral code নেওয়া
+  try {
+    var urlParams = new URLSearchParams(window.location.search);
+    var refFromUrl = urlParams.get('ref');
+    if (refFromUrl) {
+      var refInput = $('regReferralCode');
+      if (refInput) refInput.value = refFromUrl;
+      setTimeout(function () {
+        if (!AppState.user) showScreen('screen-register');
+      }, APP_CONST.splash + 500);
+    }
+  } catch (e) { console.warn('URL ref parse failed:', e); }
+
   $('btnLogin').addEventListener('click', handleLogin);
   $('btnRegister').addEventListener('click', handleRegister);
   $('btnLogout').addEventListener('click', handleLogout);
@@ -1253,11 +1246,11 @@ function bindEvents() {
     navigateTo('tasks');
   });
 
-$('btnOpenLink').addEventListener('click', function () {
-  if (!AppState.currentTask || !AppState.currentTask.link) return showToast('লিংক পাওয়া যায়নি', 'error');
-  AppState.linkOpened = true;
-  window.open(AppState.currentTask.link, '_blank', 'noopener,noreferrer');
-});
+  $('btnOpenLink').addEventListener('click', function () {
+    if (!AppState.currentTask || !AppState.currentTask.link) return showToast('লিংক পাওয়া যায়নি', 'error');
+    AppState.linkOpened = true;
+    window.open(AppState.currentTask.link, '_blank', 'noopener,noreferrer');
+  });
 
   $('btnClaim').addEventListener('click', handleClaimReward);
 
@@ -1278,6 +1271,40 @@ $('btnOpenLink').addEventListener('click', function () {
       renderHistory();
     });
   });
+
+  // Referral Copy বাটন
+  var btnCopy = $('btnCopyRef');
+  if (btnCopy) {
+    btnCopy.addEventListener('click', function () {
+      if (!AppState.profile || !AppState.profile.referralCode) return;
+      var code = AppState.profile.referralCode;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(function () {
+          showToast('কোড কপি হয়েছে: ' + code, 'success');
+        }).catch(function () {
+          alert('আপনার কোড: ' + code);
+        });
+      } else {
+        alert('আপনার কোড: ' + code);
+      }
+    });
+  }
+
+  // Referral Share বাটন
+  var btnShare = $('btnShareRef');
+  if (btnShare) {
+    btnShare.addEventListener('click', function () {
+      if (!AppState.profile || !AppState.profile.referralCode) return;
+      var code = AppState.profile.referralCode;
+      var link = window.location.origin + window.location.pathname + '?ref=' + code;
+      var text = 'Roile Earn9 এ যোগ দিন! টাস্ক করে আয় করুন।\n\nআমার রেফারেল লিংক: ' + link;
+      if (navigator.share) {
+        navigator.share({ title: 'Roile Earn9', text: text }).catch(function () {});
+      } else {
+        alert(text);
+      }
+    });
+  }
 }
 
 /* ============================================================
