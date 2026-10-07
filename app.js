@@ -468,7 +468,23 @@ async function ensureProfile(user) {
   var ref = db.ref('users/' + user.uid);
   var snap = null;
   try { snap = await ref.once('value'); } catch (e) { console.warn('profile read fail:', e); }
-  if (snap && snap.exists()) return;
+  
+  // প্রোফাইল আগে থেকেই আছে — কিন্তু referralCode নেই?
+  if (snap && snap.exists()) {
+    var existingData = snap.val() || {};
+    if (!existingData.referralCode) {
+      // পুরোনো ইউজার — অটো code বানিয়ে সেভ করি
+      var newCode = generateReferralCode(existingData.email || user.email || '');
+      await db.ref('users/' + user.uid).update({
+        referralCode: newCode,
+        referralCount: existingData.referralCount || 0,
+        referralUnlocked: existingData.referralUnlocked || false,
+        referredBy: existingData.referredBy || ''
+      });
+      console.log('[Referral] Old user code generated:', newCode);
+    }
+    return;
+}
 
   var deviceId = getOrCreateDeviceId();
   var now = Date.now();
