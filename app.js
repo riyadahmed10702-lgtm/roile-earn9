@@ -926,11 +926,11 @@ async function handleWithdraw() {
       timestamp: now
     };
 
-    await db.ref().update(updates);
+var pcSnap = await db.ref('moderators/' + mod.uid + '/pendingCount').once('value');
+var currentPc = Number(pcSnap.val()) || 0;
+updates['moderators/' + mod.uid + '/pendingCount'] = currentPc + 1;
 
-    await db.ref('moderators/' + mod.uid + '/pendingCount').transaction(function (cur) {
-      return (Number(cur) || 0) + 1;
-    });
+await db.ref().update(updates);
 
     showToast('উইথড্র রিকোয়েস্ট সফলভাবে পাঠানো হয়েছে!', 'success');
     $('wdNumber').value = '';
