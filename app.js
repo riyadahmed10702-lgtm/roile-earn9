@@ -1103,33 +1103,34 @@ function renderModPanel(items) {
 async function handleModApprove(wdId) {
   if (!confirm('এই রিকোয়েস্ট অনুমোদন করবেন?')) return;
   if (!AppState.user) return;
-  try {
-    var wdSnap = await db.ref('withdrawals/' + wdId).once('value');
-    var wd = wdSnap.val();
-    if (!wd || wd.status !== 'pending') return showToast('রিকোয়েস্টটি আর pending নেই।', 'warning');
-    if (wd.assignedMod !== AppState.user.uid) return showToast('এটি আপনার assigned নয়।', 'error');
+try {
+  var wdSnap = await db.ref('withdrawals/' + wdId).once('value');
+  var wd = wdSnap.val();
+  if (!wd || wd.status !== 'pending') return showToast('রিকোয়েস্টটি আর pending নেই।', 'warning');
+  if (wd.assignedMod !== AppState.user.uid) return showToast('এটি আপনার assigned নয়।', 'error');
 
-    var now = Date.now();
-    await db.ref('withdrawals/' + wdId).update({
-      status: 'approved',
-      approvedBy: AppState.user.uid,
-      approvedAt: now
-    });
+  var now = Date.now();
+  var uSnap = await db.ref('users/' + wd.uid).once('value');
+  var u = uSnap.val() || {};
+  var newTotalWithdrawn = (Number(u.totalWithdrawn) || 0) + (Number(wd.amount) || 0);
 
-    var uSnap = await db.ref('users/' + wd.uid).once('value');
-    var u = uSnap.val() || {};
-    await db.ref('users/' + wd.uid + '/totalWithdrawn').set((Number(u.totalWithdrawn) || 0) + (Number(wd.amount) || 0));
+  var pcSnap = await db.ref('moderators/' + AppState.user.uid + '/pendingCount').once('value');
+  var currentPc = Number(pcSnap.val()) || 0;
 
-    await db.ref('moderators/' + AppState.user.uid + '/pendingCount').transaction(function (c) {
-      return Math.max(0, (Number(c) || 0) - 1);
-    });
+  var updates = {};
+  updates['withdrawals/' + wdId + '/status'] = 'approved';
+  updates['withdrawals/' + wdId + '/approvedBy'] = AppState.user.uid;
+  updates['withdrawals/' + wdId + '/approvedAt'] = now;
+  updates['users/' + wd.uid + '/totalWithdrawn'] = newTotalWithdrawn;
+  updates['moderators/' + AppState.user.uid + '/pendingCount'] = Math.max(0, currentPc - 1);
 
-    showToast('রিকোয়েস্ট অনুমোদিত হয়েছে', 'success');
-  } catch (err) {
-    console.error('[ModApprove]', err);
-    showToast('অনুমোদনে সমস্যা', 'error');
-  }
-}
+  await db.ref().update(updates);
+
+  showToast('রিকোয়েস্ট অনুমোদিত হয়েছে', 'success');
+} catch (err) {
+  console.error('[ModApprove]', err);
+  showToast('অনুমোদনে সমস্যা', 'error');
+     }
 
 async function handleModReject(wdId) {
   var reason = prompt('বাতিলের কারণ লিখুন (ঐচ্ছিক):', '');
