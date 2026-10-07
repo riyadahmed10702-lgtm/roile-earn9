@@ -525,20 +525,25 @@ async function handleWdAction(action, wid) {
   if (action === 'approve') {
     if (!confirm('Force Approve করবেন?')) return;
     try {
-      await db.ref('withdrawals/' + wid).update({
-        status: 'approved',
-        approvedBy: AState.user.uid,
-        approvedAt: Date.now(),
-        forceApproved: true
-      });
+      var now = Date.now();
       var uSnap = await db.ref('users/' + w.uid).once('value');
       var u = uSnap.val() || {};
-      await db.ref('users/' + w.uid + '/totalWithdrawn').set((Number(u.totalWithdrawn) || 0) + (Number(w.amount) || 0));
+      var newTotalWithdrawn = (Number(u.totalWithdrawn) || 0) + (Number(w.amount) || 0);
+
+      var updates = {};
+      updates['withdrawals/' + wid + '/status'] = 'approved';
+      updates['withdrawals/' + wid + '/approvedBy'] = AState.user.uid;
+      updates['withdrawals/' + wid + '/approvedAt'] = now;
+      updates['withdrawals/' + wid + '/forceApproved'] = true;
+      updates['users/' + w.uid + '/totalWithdrawn'] = newTotalWithdrawn;
+
       if (w.assignedMod) {
-        await db.ref('moderators/' + w.assignedMod + '/pendingCount').transaction(function (c) {
-          return Math.max(0, (Number(c) || 0) - 1);
-        });
+        var pcSnap = await db.ref('moderators/' + w.assignedMod + '/pendingCount').once('value');
+        var currentPc = Number(pcSnap.val()) || 0;
+        updates['moderators/' + w.assignedMod + '/pendingCount'] = Math.max(0, currentPc - 1);
       }
+
+      await db.ref().update(updates);
       showToast('Approve হয়েছে', 'success');
     } catch (e) { showToast('সমস্যা: ' + e.message, 'error'); }
   }
@@ -547,20 +552,25 @@ async function handleWdAction(action, wid) {
     var reason = prompt('বাতিলের কারণ:', 'Admin force reject');
     if (reason === null) return;
     try {
+      var now2 = Date.now();
       var uSnap2 = await db.ref('users/' + w.uid).once('value');
       var u2 = uSnap2.val() || {};
-      await db.ref('users/' + w.uid + '/balance').set((Number(u2.balance) || 0) + (Number(w.amount) || 0));
-      await db.ref('withdrawals/' + wid).update({
-        status: 'rejected',
-        rejectedBy: AState.user.uid,
-        rejectedAt: Date.now(),
-        rejectReason: reason
-      });
+      var newBalance = (Number(u2.balance) || 0) + (Number(w.amount) || 0);
+
+      var updates2 = {};
+      updates2['withdrawals/' + wid + '/status'] = 'rejected';
+      updates2['withdrawals/' + wid + '/rejectedBy'] = AState.user.uid;
+      updates2['withdrawals/' + wid + '/rejectedAt'] = now2;
+      updates2['withdrawals/' + wid + '/rejectReason'] = reason;
+      updates2['users/' + w.uid + '/balance'] = newBalance;
+
       if (w.assignedMod) {
-        await db.ref('moderators/' + w.assignedMod + '/pendingCount').transaction(function (c) {
-          return Math.max(0, (Number(c) || 0) - 1);
-        });
+        var pcSnap2 = await db.ref('moderators/' + w.assignedMod + '/pendingCount').once('value');
+        var currentPc2 = Number(pcSnap2.val()) || 0;
+        updates2['moderators/' + w.assignedMod + '/pendingCount'] = Math.max(0, currentPc2 - 1);
       }
+
+      await db.ref().update(updates2);
       showToast('Reject ও refund হয়েছে', 'info');
     } catch (e) { showToast('সমস্যা: ' + e.message, 'error'); }
   }
