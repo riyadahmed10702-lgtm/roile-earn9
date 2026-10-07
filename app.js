@@ -1138,32 +1138,34 @@ async function handleModReject(wdId) {
   if (!AppState.user) return;
 
   try {
-    var wdSnap = await db.ref('withdrawals/' + wdId).once('value');
-    var wd = wdSnap.val();
-    if (!wd || wd.status !== 'pending') return showToast('রিকোয়েস্টটি আর pending নেই।', 'warning');
-    if (wd.assignedMod !== AppState.user.uid) return showToast('এটি আপনার assigned নয়।', 'error');
+  var wdSnap = await db.ref('withdrawals/' + wdId).once('value');
+  var wd = wdSnap.val();
+  if (!wd || wd.status !== 'pending') return showToast('রিকোয়েস্টটি আর pending নেই।', 'warning');
+  if (wd.assignedMod !== AppState.user.uid) return showToast('এটি আপনার assigned নয়।', 'error');
 
-    var now = Date.now();
-    var uSnap = await db.ref('users/' + wd.uid).once('value');
-    var u = uSnap.val() || {};
-    await db.ref('users/' + wd.uid + '/balance').set((Number(u.balance) || 0) + (Number(wd.amount) || 0));
+  var now = Date.now();
+  var uSnap = await db.ref('users/' + wd.uid).once('value');
+  var u = uSnap.val() || {};
+  var newBalance = (Number(u.balance) || 0) + (Number(wd.amount) || 0);
 
-    await db.ref('withdrawals/' + wdId).update({
-      status: 'rejected',
-      rejectedBy: AppState.user.uid,
-      rejectedAt: now,
-      rejectReason: reason || 'কারণ দেওয়া হয়নি'
-    });
+  var pcSnap = await db.ref('moderators/' + AppState.user.uid + '/pendingCount').once('value');
+  var currentPc = Number(pcSnap.val()) || 0;
 
-    await db.ref('moderators/' + AppState.user.uid + '/pendingCount').transaction(function (c) {
-      return Math.max(0, (Number(c) || 0) - 1);
-    });
+  var updates = {};
+  updates['withdrawals/' + wdId + '/status'] = 'rejected';
+  updates['withdrawals/' + wdId + '/rejectedBy'] = AppState.user.uid;
+  updates['withdrawals/' + wdId + '/rejectedAt'] = now;
+  updates['withdrawals/' + wdId + '/rejectReason'] = reason || 'কারণ দেওয়া হয়নি';
+  updates['users/' + wd.uid + '/balance'] = newBalance;
+  updates['moderators/' + AppState.user.uid + '/pendingCount'] = Math.max(0, currentPc - 1);
 
-    showToast('রিকোয়েস্ট বাতিল হয়েছে, ইউজারকে রিফান্ড করা হয়েছে', 'info');
-  } catch (err) {
-    console.error('[ModReject]', err);
-    showToast('বাতিলে সমস্যা', 'error');
-  }
+  await db.ref().update(updates);
+
+  showToast('রিকোয়েস্ট বাতিল হয়েছে, ইউজারকে রিফান্ড করা হয়েছে', 'info');
+} catch (err) {
+  console.error('[ModReject]', err);
+  showToast('বাতিলে সমস্যা', 'error');
+             }
 }
 
 /* ============================================================
