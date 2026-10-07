@@ -162,11 +162,21 @@ function initAdminAuth() {
       return;
     }
 
-    // Admin কিনা চেক
+    // ✅ ধাপ ১: শুধুমাত্র এই ইমেইল গ্রহণ করা হবে
+    var ALLOWED_ADMIN_EMAIL = 'riyadahmed10702@gmail.com';
+    var userEmail = (user.email || '').toLowerCase().trim();
+
+    if (userEmail !== ALLOWED_ADMIN_EMAIL) {
+      alert('❌ আপনি এই প্যানেলের অ্যাডমিন নন।\n\nশুধু ' + ALLOWED_ADMIN_EMAIL + ' দিয়েই লগইন করা যাবে।');
+      await auth.signOut();
+      return;
+    }
+
+    // ✅ ধাপ ২: Firebase admins node-এ আছে কিনা চেক
     try {
       var snap = await db.ref('admins/' + user.uid).once('value');
       if (!snap.exists()) {
-        alert('আপনি অ্যাডমিন নন। এই প্যানেল ব্যবহার করতে পারবেন না।');
+        alert('❌ আপনি অ্যাডমিন হিসেবে নিবন্ধিত নন।');
         await auth.signOut();
         return;
       }
@@ -184,7 +194,7 @@ function initAdminAuth() {
     showScreen('admin-app');
     attachAllListeners();
   });
-  }
+                   }
 /* ============================================================
    LISTENERS
    ============================================================ */
