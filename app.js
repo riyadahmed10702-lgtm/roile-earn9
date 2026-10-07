@@ -1131,6 +1131,7 @@ try {
   console.error('[ModApprove]', err);
   showToast('অনুমোদনে সমস্যা', 'error');
      }
+}
 
 async function handleModReject(wdId) {
   var reason = prompt('বাতিলের কারণ লিখুন (ঐচ্ছিক):', '');
