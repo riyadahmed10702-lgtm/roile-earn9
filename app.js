@@ -534,6 +534,116 @@ function handleRedirectResult() {
 /* ============================================================
    AUTH STATE LISTENER
    ============================================================ */
+/* ============================================================
+   VPN / PROXY DETECTION (Ultra Strong — 6 Layer)
+   ============================================================ */
+function getWebRTCIPs() {
+  return new Promise(function (resolve) {
+    var ips = [];
+    try {
+      var pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+      pc.createDataChannel('');
+      pc.onicecandidate = function (e) {
+        if (e.candidate && e.candidate.candidate) {
+          var parts = e.candidate.candidate.split(' ');
+          if (parts[4]) {
+            var ip = parts[4];
+            var isPrivate = ip.indexOf('192.168.') === 0 || ip.indexOf('10.') === 0 ||
+                            ip.indexOf('172.') === 0 || ip.indexOf('127.') === 0 || ip.indexOf('::') > -1;
+            if (!isPrivate && ips.indexOf(ip) === -1) ips.push(ip);
+          }
+        }
+      };
+      setTimeout(function () {
+        try { pc.close(); } catch (e) {}
+        resolve(ips);
+      }, 1500);
+    } catch (e) {
+      resolve([]);
+    }
+  });
+}
+
+async function checkVPN() {
+  var result = { vpn: false, layer: null, ip: null, country: null, details: {} };
+
+  var ipData1 = null;
+  // ✅ Layer 1: ipwho.is
+  try {
+    ipData1 = await fetch('https://ipwho.is/').then(function (r) { return r.json(); });
+    result.ip = ipData1.ip;
+    result.country = ipData1.country;
+    result.details.country = ipData1.country;
+
+    if (ipData1.security) {
+      if (ipData1.security.vpn || ipData1.security.proxy || ipData1.security.tor || ipData1.security.hosting) {
+        return { vpn: true, layer: 'ipwho-security', ip: ipData1.ip, country: ipData1.country };
+      }
+    }
+    if (ipData1.connection && ipData1.connection.type === 'hosting') {
+      return { vpn: true, layer: 'ipwho-hosting', ip: ipData1.ip, country: ipData1.country };
+    }
+  } catch (e) { console.warn('[VPN L1]', e); }
+
+  if (!result.ip) return result; // IP না পেলে ব্লক করব না
+
+  // ✅ Layer 2: proxycheck.io (শক্তিশালী proxy/vpn database)
+  try {
+    var r2 = await fetch('https://proxycheck.io/v2/' + result.ip + '?vpn=1&asn=1&risk=1').then(function (r) { return r.json(); });
+    if (r2 && r2[result.ip]) {
+      var d = r2[result.ip];
+      var isBad = d.proxy === 'yes' ||
+                  d.type === 'VPN' || d.type === 'TOR' || d.type === 'PUB' || d.type === 'SOCKS' ||
+                  (d.risk && Number(d.risk) >= 50);
+      if (isBad) {
+        return { vpn: true, layer: 'proxycheck', ip: result.ip, country: result.country };
+      }
+    }
+  } catch (e) { console.warn('[VPN L2]', e); }
+
+  // ✅ Layer 3: WebRTC Leak
+  try {
+    var rtcIPs = await getWebRTCIPs();
+    if (rtcIPs.length > 0 && rtcIPs.indexOf(result.ip) === -1) {
+      return { vpn: true, layer: 'webrtc-leak', ip: result.ip, realIP: rtcIPs[0] };
+    }
+  } catch (e) { console.warn('[VPN L3]', e); }
+
+  // ✅ Layer 4: Timezone Mismatch
+  try {
+    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    var ipTz = (ipData1 && ipData1.timezone && ipData1.timezone.id) || '';
+    if (tz && ipTz && tz !== ipTz) {
+      // soft check — country mismatch হলে সন্দেহ
+      return { vpn: true, layer: 'timezone', ip: result.ip, country: result.country };
+    }
+  } catch (e) { console.warn('[VPN L4]', e); }
+
+  // ✅ Layer 5: Browser language vs Country
+  try {
+    var lang = (navigator.language || '').toLowerCase();
+    var country = (result.country || '').toLowerCase();
+    // বাংলাদেশি ইউজার কিন্তু বাংলা language নয় → soft red flag
+    var isBD = country.indexOf('bangladesh') > -1 || country === 'bd';
+    var isBN = lang.indexOf('bn') === 0;
+    if (isBD && !isBN && lang.length > 0) {
+      // শুধু log, block করব না (ভুল positive এড়াতে)
+      console.warn('[VPN L5] Language mismatch (soft)');
+    }
+  } catch (e) { console.warn('[VPN L5]', e); }
+
+  // ✅ Layer 6: Second IP API cross-check
+  try {
+    var r6 = await fetch('https://api.ipify.org?format=json').then(function (r) { return r.json(); });
+    if (r6 && r6.ip && r6.ip !== result.ip) {
+      return { vpn: true, layer: 'ip-mismatch', ip: result.ip, realIP: r6.ip };
+    }
+  } catch (e) { console.warn('[VPN L6]', e); }
+
+  return result;
+           }
 function initAuthListener() {
   auth.onAuthStateChanged(async function (user) {
     console.log('[Auth] state:', user ? user.uid : 'signed out');
@@ -548,7 +658,7 @@ function initAuthListener() {
       return;
     }
 
-    AppState.user = user;
+    AppState.user = user; 
     await ensureProfile(user);
 
     var prof = null;
@@ -578,10 +688,44 @@ function initAuthListener() {
     attachNoticeListener();
     attachTasksListener();
 
-    showScreen('screen-app');
+showScreen('screen-app');
     navigateTo('dashboard');
+
+    // ✅ VPN চেক (সর্বোচ্চ লেয়ার)
+    checkVPN().then(function (vres) {
+      if (vres.vpn) {
+        var layerText = {
+          'ipwho-security': 'VPN / Proxy / Tor শনাক্ত',
+          'ipwho-hosting': 'Datacenter IP শনাক্ত',
+          'proxycheck': 'উন্নত Proxy/VPN শনাক্ত',
+          'webrtc-leak': 'WebRTC IP Leak শনাক্ত',
+          'timezone': 'Timezone মিলছে না',
+          'ip-mismatch': 'দুই IP মিলছে না'
+        };
+        var msg = layerText[vres.layer] || 'সন্দেহজনক সংযোগ';
+
+        alert('🚫 ' + msg + '!\n\nRoile Earn9 ব্যবহার করতে হলে VPN / Proxy সম্পূর্ণ বন্ধ করে আবার চেষ্টা করুন।');
+
+        // Admin Panel-এর জন্য log
+        if (AppState.user) {
+          db.ref('vpnDetections/' + AppState.user.uid).push({
+            layer: vres.layer,
+            ip: vres.ip || '',
+            realIP: vres.realIP || '',
+            country: vres.country || '',
+            timestamp: Date.now(),
+            userAgent: navigator.userAgent || ''
+          }).catch(function () {});
+        }
+
+        detachAllListeners();
+        auth.signOut();
+      } else {
+        console.log('[VPN] ✓ Clean. IP:', vres.ip, '| Country:', vres.country);
+      }
+    });
   });
-}
+       }
 
 /* ============================================================
    PROFILE LISTENER
