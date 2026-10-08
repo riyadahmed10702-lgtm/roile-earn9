@@ -180,6 +180,29 @@ function translateGoogleError(code) {
 }
 
 /* Device ID */
+/* ============================================================
+   REFERRAL URL CAPTURE (Google Sign-up এর জন্য)
+   ============================================================ */
+function captureRefFromURL() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var ref = params.get('ref');
+    if (ref) {
+      ref = ref.trim().toUpperCase();
+      localStorage.setItem('roile_pending_ref', ref);
+      console.log('[Referral] Captured from URL:', ref);
+    }
+  } catch (e) { console.warn('[Referral] URL capture failed:', e); }
+}
+
+function getPendingRef() {
+  var ref = localStorage.getItem('roile_pending_ref');
+  return ref ? ref.trim().toUpperCase() : '';
+}
+
+function clearPendingRef() {
+  localStorage.removeItem('roile_pending_ref');
+}
 function getOrCreateDeviceId() {
   var id = localStorage.getItem(APP_CONST.deviceKey);
   if (!id) {
@@ -486,36 +509,73 @@ async function ensureProfile(user) {
     return;
 }
 
-  var deviceId = getOrCreateDeviceId();
-  var now = Date.now();
-  var myRefCode = generateReferralCode(user.email || '');
-  var profile = {
-    name: user.displayName || (user.email ? user.email.split('@')[0] : 'ব্যবহারকারী'),
-    email: user.email || '',
-    phone: '',
-    deviceId: deviceId,
-    balance: 0,
-    totalEarned: 0,
-    totalWithdrawn: 0,
-    banned: false,
-    role: 'user',
-    provider: user.providerData && user.providerData[0] ? user.providerData[0].providerId : 'google.com',
-    referralCode: myRefCode,
-    referralCount: 0,
-    referralUnlocked: false,
-    referredBy: '',
-    createdAt: now,
-    lastLogin: now
-  };
+var deviceId = getOrCreateDeviceId();
+var now = Date.now();
+var myRefCode = generateReferralCode(user.email || '');
 
+// ✅ URL থেকে captured referral code
+var pendingRef = getPendingRef();
+var referrerUid = '';
+
+if (pendingRef) {
   try {
+    var refSnap = await db.ref('users').orderByChild('referralCode').equalTo(pendingRef).once('value');
+    var refData = refSnap.val();
+    if (refData) {
+      var refKeys = Object.keys(refData);
+      for (var ri = 0; ri < refKeys.length; ri++) {
+        if (refKeys[ri] !== user.uid) {
+          referrerUid = refKeys[ri];
+          break;
+        }
+      }
+    }
+  } catch (e) { console.warn('[Referral] lookup failed:', e); }
+}
+
+var profile = {
+  name: user.displayName || (user.email ? user.email.split('@')[0] : 'ব্যবহারকারী'),
+  email: user.email || '',
+  phone: '',
+  deviceId: deviceId,
+  balance: 0,
+  totalEarned: 0,
+  totalWithdrawn: 0,
+  banned: false,
+  role: 'user',
+  provider: user.providerData && user.providerData[0] ? user.providerData[0].providerId : 'google.com',
+  referralCode: myRefCode,
+  referralCount: 0,
+  referralUnlocked: false,
+  referredBy: referrerUid || '',
+  createdAt: now,
+  lastLogin: now
+};
+    try {
     await ref.set(profile);
     await db.ref('devices/' + deviceId).set({ uid: user.uid, createdAt: now });
-    showToast('স্বাগতম! আপনার অ্যাকাউন্ট তৈরি হয়েছে।', 'success');
+
+    // ✅ Referrer-এর কাছে entry যোগ করি
+    if (referrerUid) {
+      var referrerCodeSnap = await db.ref('users/' + referrerUid + '/referralCode').once('value');
+      var referrerCode = referrerCodeSnap.val();
+      if (referrerCode) {
+        await db.ref('referrals/' + referrerCode + '/' + user.uid).set({
+          uid: user.uid,
+          name: profile.name,
+          email: profile.email,
+          timestamp: now
+        });
+      }
+      clearPendingRef();
+      showToast('🎉 Referral সফলভাবে যোগ হয়েছে!', 'success');
+    } else {
+      showToast('স্বাগতম! আপনার অ্যাকাউন্ট তৈরি হয়েছে।', 'success');
+    }
   } catch (e) {
     console.error('[ensureProfile]', e);
   }
-}
+     }
 /* ============================================================
    REDIRECT RESULT
    ============================================================ */
@@ -1486,6 +1546,7 @@ window.addEventListener('unhandledrejection', function (e) {
    ============================================================ */
 (function bootstrap() {
   getOrCreateDeviceId();
+  captureRefFromURL();
 
   document.addEventListener('DOMContentLoaded', function () {
     try {
