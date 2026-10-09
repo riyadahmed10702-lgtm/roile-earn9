@@ -666,12 +666,11 @@ async function checkVPN() {
       }
     }
   } catch (e) { console.warn('[VPN L2]', e); }
-
   return result;
-               }
-
+}
   return result;
-           }
+}
+
 function initAuthListener() {
   auth.onAuthStateChanged(async function (user) {
     console.log('[Auth] state:', user ? user.uid : 'signed out');
