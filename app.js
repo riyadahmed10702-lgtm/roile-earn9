@@ -471,6 +471,94 @@ async function handleGoogleAuth() {
 /* ============================================================
    AUTH — LOGOUT
    ============================================================ */
+/* ============================================================
+   REFERRAL PROMPT (Google Signup-এর জন্য)
+   ============================================================ */
+function showReferralPrompt() {
+  var modal = $('referralPromptModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function hideReferralPrompt() {
+  var modal = $('referralPromptModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function applyReferralFromPrompt() {
+  var code = ($('promptRefCode').value || '').trim().toUpperCase();
+  var msg = $('promptRefMsg');
+  if (!code) {
+    msg.className = 'error-box error';
+    msg.textContent = 'কোড দিন অথবা Skip চাপুন।';
+    msg.classList.remove('hidden');
+    return;
+  }
+  if (!AppState.user) return;
+
+  var btn = $('btnApplyRef');
+  btn.disabled = true;
+  btn.textContent = 'চেক করা হচ্ছে...';
+
+  try {
+    var refSnap = await db.ref('users').orderByChild('referralCode').equalTo(code).once('value');
+    var refData = refSnap.val();
+    if (!refData) {
+      msg.className = 'error-box error';
+      msg.textContent = '❌ কোডটি সঠিক নয়।';
+      msg.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Apply';
+      return;
+    }
+    var refKeys = Object.keys(refData);
+    var referrerUid = '';
+    for (var i = 0; i < refKeys.length; i++) {
+      if (refKeys[i] !== AppState.user.uid) {
+        referrerUid = refKeys[i];
+        break;
+      }
+    }
+    if (!referrerUid) {
+      msg.className = 'error-box error';
+      msg.textContent = '❌ নিজের কোড ব্যবহার করা যাবে না।';
+      msg.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Apply';
+      return;
+    }
+
+    // Apply referral
+    await db.ref('users/' + AppState.user.uid).update({
+      referredBy: referrerUid,
+      referralAsked: true
+    });
+    await db.ref('referrals/' + code + '/' + AppState.user.uid).set({
+      uid: AppState.user.uid,
+      name: (AppState.profile && AppState.profile.name) || '',
+      email: (AppState.profile && AppState.profile.email) || '',
+      timestamp: Date.now()
+    });
+
+    showToast('🎉 Referral সফলভাবে যোগ হয়েছে!', 'success');
+    hideReferralPrompt();
+  } catch (e) {
+    console.error('[ReferralPrompt]', e);
+    msg.className = 'error-box error';
+    msg.textContent = 'সমস্যা হয়েছে। আবার চেষ্টা করুন।';
+    msg.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Apply';
+  }
+}
+
+async function skipReferralPrompt() {
+  if (!AppState.user) return;
+  try {
+    await db.ref('users/' + AppState.user.uid + '/referralAsked').set(true);
+  } catch (e) { console.warn(e); }
+  hideReferralPrompt();
+      }
 async function handleLogout() {
   if (!confirm('আপনি কি লগআউট করতে চান?')) return;
   try {
