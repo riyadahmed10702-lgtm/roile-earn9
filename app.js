@@ -269,7 +269,8 @@ function updateReferralUI(data) {
   var statusEl = $('refStatus');
   var subEl = $('refSubtitle');
   var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
-  var unlocked = data.referralUnlocked || required === 0;
+var myCount = data.referralCount || 0;
+var unlocked = data.referralUnlocked || required === 0 || (required > 0 && myCount >= required);
   if (statusEl) {
     if (unlocked) {
       statusEl.textContent = '✅ Unlocked';
@@ -294,20 +295,25 @@ function attachReferralListener() {
     try { AppState.listeners.referral.ref.off('value', AppState.listeners.referral.cb); } catch (e) {}
   }
   var ref = db.ref('referrals/' + myCode);
-  var cb = function (snap) {
+var cb = function (snap) {
     var data = snap.val() || {};
     var count = Object.keys(data).length;
+    var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
+    var needUnlock = required > 0 && count >= required &&
+                     !(AppState.profile && AppState.profile.referralUnlocked);
+    var isUnlocked = (AppState.profile && AppState.profile.referralUnlocked) ||
+                     (required > 0 && count >= required) ||
+                     required === 0;
+
     updateReferralUI({
       referralCode: myCode,
       referralCount: count,
-      referralUnlocked: AppState.profile ? AppState.profile.referralUnlocked : false
+      referralUnlocked: isUnlocked
     });
-    if (AppState.profile && (AppState.profile.referralCount || 0) !== count) {
+
+    if (AppState.profile && ((AppState.profile.referralCount || 0) !== count || needUnlock)) {
       var updates = { referralCount: count };
-      var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
-      if (required > 0 && count >= required && !AppState.profile.referralUnlocked) {
-        updates.referralUnlocked = true;
-      }
+      if (needUnlock) updates.referralUnlocked = true;
       db.ref('users/' + AppState.user.uid).update(updates).catch(function () {});
     }
   };
@@ -1160,13 +1166,15 @@ async function handleWithdraw() {
   if (!amount || amount < minWd) return showError('wdMessage', 'নূন্যতম ৳' + minWd + ' উত্তোলন করা যাবে।');
   if (amount > balance) return showError('wdMessage', 'পর্যাপ্ত ব্যালেন্স নেই।');
 
-  var requiredRefs = AppState.settings.requiredReferrals || 0;
-  var unlocked = AppState.profile.referralUnlocked || requiredRefs === 0;
-  if (!unlocked) {
-    var have = AppState.profile.referralCount || 0;
-    return showError('wdMessage', 'Withdraw এর জন্য ' + requiredRefs + ' জনকে রেফার করতে হবে। আপনি করেছেন: ' + have + '/' + requiredRefs);
-  }
+var requiredRefs = AppState.settings.requiredReferrals || 0;
+  var have = AppState.profile.referralCount || 0;
+  var unlocked = AppState.profile.referralUnlocked ||
+                 requiredRefs === 0 ||
+                 (requiredRefs > 0 && have >= requiredRefs);
 
+  if (!unlocked) {
+    return showError('wdMessage', 'Withdraw এর জন্য ' + requiredRefs + ' জনকে রেফার করতে হবে। আপনি করেছেন: ' + have + '/' + requiredRefs);
+}
   var btn = $('btnWithdraw');
   btn.disabled = true;
   btn.textContent = 'পাঠানো হচ্ছে...';
