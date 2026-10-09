@@ -395,7 +395,23 @@
     </nav>
 
   </div><!-- /screen-app -->
-
+<!-- ========== REFERRAL PROMPT (Google Signup) ========== -->
+<div id="referralPromptModal" class="overlay hidden">
+  <div class="cooldown-box" style="max-width: 360px;">
+    <h3>🎁 Referral Code আছে?</h3>
+    <p style="margin-bottom: 16px; font-size: 13px;">কারো আমন্ত্রণে এসেছেন? কোড দিন — অথবা Skip করুন।</p>
+    <div class="input-group" style="text-align:left;">
+      <label>Referral Code (ঐচ্ছিক)</label>
+      <input type="text" id="promptRefCode" placeholder="যেমন: RITA96-A7B" autocomplete="off">
+    </div>
+    <div id="promptRefMsg" class="error-box hidden"></div>
+    <div class="modal-actions" style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <button id="btnSkipRef" class="btn btn-ghost">Skip</button>
+      <button id="btnApplyRef" class="btn btn-primary">Apply</button>
+    </div>
+  </div>
+  </div>
+  
   <!-- ========== COOLDOWN OVERLAY ========== -->
   <div id="cooldownOverlay" class="overlay hidden">
     <div class="cooldown-box">
