@@ -665,9 +665,8 @@ async function checkVPN() {
         return { vpn: true, layer: 'proxycheck-risk', ip: result.ip, country: result.country };
       }
     }
-  } catch (e) { console.warn('[VPN L2]', e); }
-  return result;
-}
+} catch (e) { console.warn('[VPN L2]', e); }
+
   return result;
 }
 
