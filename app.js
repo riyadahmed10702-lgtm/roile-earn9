@@ -380,13 +380,14 @@ async function handleRegister() {
       banned: false,
       role: 'user',
       provider: 'password',
-      referralCode: myRefCode,
-      referralCount: 0,
-      referralUnlocked: false,
-      referredBy: referrerUid || '',
-      createdAt: now,
-      lastLogin: now
-    });
+          referralCode: myRefCode,
+  referralCount: 0,
+  referralUnlocked: false,
+  referredBy: referrerUid || '',
+  referralAsked: referrerUid ? true : false,
+  createdAt: now,
+  lastLogin: now
+};
 
     await db.ref('devices/' + deviceId).set({
       uid: createdUser.uid,
