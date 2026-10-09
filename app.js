@@ -807,6 +807,13 @@ function initAuthListener() {
 showScreen('screen-app');
     navigateTo('dashboard');
 
+// ✅ Google/user যার referral দেওয়া হয়নি → Popup দেখাই
+var hasRef = prof && prof.referredBy;
+var asked = prof && prof.referralAsked === true;
+var pendingRef = getPendingRef();
+if (!hasRef && !asked && !pendingRef) {
+  setTimeout(function () { showReferralPrompt(); }, 1200);
+       }
     // ✅ VPN চেক (সর্বোচ্চ লেয়ার)
     checkVPN().then(function (vres) {
       if (vres.vpn) {
@@ -1542,6 +1549,10 @@ function bindEvents() {
   });
 
   $('btnWithdraw').addEventListener('click', handleWithdraw);
+var btnSkip = $('btnSkipRef');
+if (btnSkip) btnSkip.addEventListener('click', skipReferralPrompt);
+var btnApply = $('btnApplyRef');
+if (btnApply) btnApply.addEventListener('click', applyReferralFromPrompt);
 
   $all('.history-tab').forEach(function (tab) {
     tab.addEventListener('click', function () {
