@@ -1,9 +1,9 @@
 /* ============================================================
-   Roile Earn9 — Admin Panel Logic (Part 1/3)
+   Roile Earn9 — Admin Panel Logic
    ============================================================ */
 'use strict';
 
-/* Firebase Config (একই প্রজেক্ট) */
+/* Firebase Config */
 const firebaseConfig = {
   apiKey: "AIzaSyDQPP8lIg90S2Z1MWImCx261hVb_A-TV0g",
   authDomain: "roile-earn9.firebaseapp.com",
@@ -55,9 +55,10 @@ function showToast(msg, type) {
   type = type || 'info';
   var c = $('adminToast');
   if (!c) return;
+  var icons = { success: '✔', error: '✕', warning: '⚠', info: 'ℹ' };
   var t = document.createElement('div');
   t.className = 'toast ' + type;
-  t.textContent = msg;
+  t.textContent = (icons[type] || 'ℹ') + ' ' + msg;
   c.appendChild(t);
   setTimeout(function () {
     t.style.opacity = '0';
@@ -124,6 +125,7 @@ async function handleAdminLogin() {
   } catch (err) {
     console.error('[AdminLogin]', err);
     showError('adminLoginError', 'লগইন ব্যর্থ: ' + (err.message || 'আবার চেষ্টা করুন'));
+  } finally {
     btn.disabled = false;
     btn.textContent = 'লগইন';
   }
@@ -144,6 +146,7 @@ async function handleAdminGoogle() {
 async function handleAdminLogout() {
   if (!confirm('লগআউট করবেন?')) return;
   try {
+    detachAdminListeners();
     await auth.signOut();
     showToast('লগআউট হয়েছে', 'info');
   } catch (e) {
@@ -151,6 +154,16 @@ async function handleAdminLogout() {
   }
 }
 
+/* ✅ Listener detach helper (fix #4) */
+function detachAdminListeners() {
+  Object.keys(AState.listeners).forEach(function (k) {
+    var l = AState.listeners[k];
+    if (l && typeof l.off === 'function') {
+      try { l.off(); } catch (e) {}
+    }
+    AState.listeners[k] = null;
+  });
+}
 /* ============================================================
    AUTH STATE + ADMIN CHECK
    ============================================================ */
@@ -162,7 +175,6 @@ function initAdminAuth() {
       return;
     }
 
-    // ✅ ধাপ ১: শুধুমাত্র এই ইমেইল গ্রহণ করা হবে
     var ALLOWED_ADMIN_EMAIL = 'riyadahmed10702@gmail.com';
     var userEmail = (user.email || '').toLowerCase().trim();
 
@@ -172,7 +184,6 @@ function initAdminAuth() {
       return;
     }
 
-    // ✅ ধাপ ২: Firebase admins node-এ আছে কিনা চেক
     try {
       var snap = await db.ref('admins/' + user.uid).once('value');
       if (!snap.exists()) {
@@ -194,45 +205,59 @@ function initAdminAuth() {
     showScreen('admin-app');
     attachAllListeners();
   });
-                   }
+}
+
 /* ============================================================
    LISTENERS
    ============================================================ */
 function attachAllListeners() {
-  // Users
-  db.ref('users').on('value', function (s) {
+  detachAdminListeners();
+
+  var usersRef = db.ref('users');
+  var usersCb = function (s) {
     AState.users = s.val() || {};
     renderDashboard();
     renderUsers();
-  });
+  };
+  usersRef.on('value', usersCb);
+  AState.listeners.users = usersRef;
 
-  // Tasks
-  db.ref('tasks').on('value', function (s) {
+  var tasksRef = db.ref('tasks');
+  var tasksCb = function (s) {
     AState.tasks = s.val() || {};
     renderDashboard();
     renderTasks();
-  });
+  };
+  tasksRef.on('value', tasksCb);
+  AState.listeners.tasks = tasksRef;
 
-  // Withdrawals
-  db.ref('withdrawals').on('value', function (s) {
+  var wdRef = db.ref('withdrawals');
+  var wdCb = function (s) {
     AState.withdrawals = s.val() || {};
     renderDashboard();
     renderWithdrawals();
-  });
+  };
+  wdRef.on('value', wdCb);
+  AState.listeners.withdrawals = wdRef;
 
-  // Moderators
-  db.ref('moderators').on('value', function (s) {
+  var modsRef = db.ref('moderators');
+  var modsCb = function (s) {
     AState.moderators = s.val() || {};
     renderModerators();
-  });
+    renderUsers();
+  };
+  modsRef.on('value', modsCb);
+  AState.listeners.moderators = modsRef;
 
-  // Settings
-  db.ref('settings').on('value', function (s) {
+  var settingsRef = db.ref('settings');
+  var settingsCb = function (s) {
     AState.settings = s.val() || {};
     fillSettings();
     var nt = $('noticeText');
     if (nt) nt.value = AState.settings.notice || '';
-  });
+  };
+  settingsRef.on('value', settingsCb);
+  AState.listeners.settings = settingsRef;
 }
 
 /* ============================================================
@@ -260,8 +285,7 @@ function renderDashboard() {
   $('statPendingWd').textContent = pending;
   $('statTotalBalance').textContent = '৳' + formatMoney(totalBalance);
   $('statTasks').textContent = activeTasks;
-}
-
+              }
 /* ============================================================
    USERS
    ============================================================ */
@@ -438,6 +462,7 @@ async function saveTask() {
 
   if (!title) return showError('taskModalError', 'টাইটেল দিন।');
   if (!link) return showError('taskModalError', 'লিংক দিন।');
+  if (!/^https?:\/\//i.test(link)) return showError('taskModalError', 'লিংক https:// বা http:// দিয়ে শুরু হতে হবে।');
   if (!reward || reward <= 0) return showError('taskModalError', 'রিওয়ার্ড দিন।');
 
   var data = { title: title, desc: desc, link: link, reward: reward, active: active };
@@ -464,7 +489,7 @@ async function handleTaskAction(action, tid) {
     await db.ref('tasks/' + tid).remove();
     showToast('ডিলিট হয়েছে', 'info');
   }
-    }
+       }
 /* ============================================================
    WITHDRAWALS
    ============================================================ */
@@ -625,8 +650,7 @@ async function handleModAction(action, uid) {
     await db.ref('users/' + uid + '/role').set('user');
     showToast('সরানো হয়েছে', 'info');
   }
-}
-
+                              }
 /* ============================================================
    NOTICE + SETTINGS
    ============================================================ */
@@ -639,19 +663,25 @@ async function saveNotice() {
   } catch (e) { showToast('সমস্যা: ' + e.message, 'error'); }
 }
 
+/* ✅ Fix #5: 0 value support */
 function fillSettings() {
   var s = AState.settings || {};
-  if ($('setMinWithdraw')) $('setMinWithdraw').value = s.minWithdraw || 50;
-  if ($('setTaskDuration')) $('setTaskDuration').value = s.taskDuration || 30;
-  if ($('setCooldown')) $('setCooldown').value = s.cooldownDuration || 60;
-  if ($('setRequiredReferrals')) $('setRequiredReferrals').value = s.requiredReferrals || 0;
+  if ($('setMinWithdraw')) $('setMinWithdraw').value = (typeof s.minWithdraw === 'number') ? s.minWithdraw : 50;
+  if ($('setTaskDuration')) $('setTaskDuration').value = (typeof s.taskDuration === 'number') ? s.taskDuration : 30;
+  if ($('setCooldown')) $('setCooldown').value = (typeof s.cooldownDuration === 'number') ? s.cooldownDuration : 60;
+  if ($('setRequiredReferrals')) $('setRequiredReferrals').value = (typeof s.requiredReferrals === 'number') ? s.requiredReferrals : 0;
 }
 
 async function saveSettings() {
-  var minWd = Number($('setMinWithdraw').value || 50);
-  var td = Number($('setTaskDuration').value || 30);
-  var cd = Number($('setCooldown').value || 60);
-  var rr = Number($('setRequiredReferrals').value || 0);
+  var minWd = Number($('setMinWithdraw').value);
+  var td = Number($('setTaskDuration').value);
+  var cd = Number($('setCooldown').value);
+  var rr = Number($('setRequiredReferrals').value);
+
+  if (isNaN(minWd) || minWd < 0) return showToast('সঠিক minWithdraw দিন', 'error');
+  if (isNaN(td) || td < 5) return showToast('taskDuration কমপক্ষে 5 দিন', 'error');
+  if (isNaN(cd) || cd < 0) return showToast('সঠিক cooldown দিন', 'error');
+  if (isNaN(rr) || rr < 0) return showToast('সঠিক requiredReferrals দিন', 'error');
 
   try {
     await db.ref('settings').update({
