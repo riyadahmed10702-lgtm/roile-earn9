@@ -572,7 +572,7 @@ async function skipReferralPrompt() {
   } catch (e) { console.warn(e); }
   hideReferralPrompt();
                   }
-     /* ============================================================
+/* ============================================================
    ENSURE PROFILE (BUG FIX — overwrite protection)
    ============================================================ */
 async function ensureProfile(user) {
@@ -1042,13 +1042,23 @@ async function handleClaimReward() {
   var now = Date.now();
 
   try {
-    var profileRef = db.ref('users/' + uid);
-    var snap = await profileRef.once('value');
-    var p = snap.val() || {};
-    var newBalance = (Number(p.balance) || 0) + reward;
-    var newTotalEarned = (Number(p.totalEarned) || 0) + reward;
+    // ✅ Atomic transaction — double-click হলেও একবারই কাজ করবে
+    var balanceRef = db.ref('users/' + uid + '/balance');
+    var totalEarnedRef = db.ref('users/' + uid + '/totalEarned');
 
-    await profileRef.update({ balance: newBalance, totalEarned: newTotalEarned });
+    var balResult = await balanceRef.transaction(function (current) {
+      return (Number(current) || 0) + reward;
+    });
+
+    if (!balResult.committed) {
+      throw new Error('Balance update failed');
+    }
+
+    await totalEarnedRef.transaction(function (current) {
+      return (Number(current) || 0) + reward;
+    });
+
+    // Earnings record
     await db.ref('users/' + uid + '/earnings/' + now).set({
       taskId: task.id,
       taskName: task.title || 'টাস্ক',
@@ -1072,23 +1082,28 @@ async function handleClaimReward() {
 /* ============================================================
    COOLDOWN
    ============================================================ */
+function getCooldownKey() {
+  var uid = (AppState.user && AppState.user.uid) ? AppState.user.uid : 'guest';
+  return APP_CONST.cooldownKey + '_' + uid;
+}
+
 function setCooldown(seconds) {
   var until = Date.now() + (seconds * 1000);
   if (AppState.user) {
     db.ref('users/' + AppState.user.uid + '/cooldownUntil').set(until).catch(function(){});
   }
-  localStorage.setItem(APP_CONST.cooldownKey, String(until));
+  try { localStorage.setItem(getCooldownKey(), String(until)); } catch (e) {}
 }
 
 function getCooldownRemaining() {
   var fromDb = (AppState.profile && AppState.profile.cooldownUntil) || 0;
-  var fromLocal = Number(localStorage.getItem(APP_CONST.cooldownKey) || 0);
+  var fromLocal = 0;
+  try { fromLocal = Number(localStorage.getItem(getCooldownKey()) || 0); } catch (e) {}
   var until = Math.max(fromDb, fromLocal);
   if (!until) return 0;
   var left = Math.ceil((until - Date.now()) / 1000);
   return left > 0 ? left : 0;
 }
-
 function showCooldownOverlay(seconds) {
   var overlay = $('cooldownOverlay');
   var num = $('cdNumber');
