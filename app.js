@@ -457,13 +457,16 @@ async function handleLogin() {
    AUTH — GOOGLE
    ============================================================ */
 async function handleGoogleAuth() {
+async function handleGoogleAuth() {
   clearError('loginError');
   clearError('regError');
 
   var provider = new firebase.auth.GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
   try {
-    await auth.signInWithRedirect(provider);
+    var result = await auth.signInWithPopup(provider);
+    if (result && result.user) {
+      showToast('গুগল লগইন সফল', 'success');
+    }
   } catch (err) {
     console.error('[GoogleAuth]', err);
     var msg = translateGoogleError(err.code);
@@ -471,7 +474,7 @@ async function handleGoogleAuth() {
     else showError('regError', msg);
     showToast(msg, 'error');
   }
-}
+   }
 
 /* ============================================================
    AUTH — LOGOUT
