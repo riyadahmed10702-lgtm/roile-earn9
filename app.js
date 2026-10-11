@@ -457,7 +457,6 @@ async function handleLogin() {
    AUTH — GOOGLE
    ============================================================ */
 async function handleGoogleAuth() {
-async function handleGoogleAuth() {
   clearError('loginError');
   clearError('regError');
 
@@ -474,7 +473,7 @@ async function handleGoogleAuth() {
     else showError('regError', msg);
     showToast(msg, 'error');
   }
-   }
+       }
 
 /* ============================================================
    AUTH — LOGOUT
@@ -1649,7 +1648,7 @@ window.addEventListener('unhandledrejection', function (e) {
     }
 
     try {
-      handleRedirectResult();
+      // handleRedirectResult();
       initAuthListener();
     } catch (e) {
       console.error('[Bootstrap] auth error:', e);
