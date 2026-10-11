@@ -463,7 +463,7 @@ async function handleGoogleAuth() {
   var provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
   try {
-    await auth.signInWithPopup(provider);
+    await auth.signInWithRedirect(provider);
   } catch (err) {
     console.error('[GoogleAuth]', err);
     var msg = translateGoogleError(err.code);
