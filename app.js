@@ -468,13 +468,30 @@ async function handleGoogleAuth() {
     }
   } catch (err) {
     console.error('[GoogleAuth]', err);
+    
+    // যদি WebView-এ পপ-আপ ব্লক হয়, তবে এটি স্বয়ংক্রিয়ভাবে Redirect মেথডে কাজ করবে
+    if (err.code === 'auth/popup-blocked' || 
+        err.code === 'auth/operation-not-supported-in-this-environment' || 
+        err.code === 'auth/cancelled-popup-request' ||
+        err.code === 'auth/popup-closed-by-user' ||
+        err.code === 'auth/internal-error') {
+      
+      console.log('[GoogleAuth] Popup restricted in WebView, switching to redirect...');
+      try {
+        await auth.signInWithRedirect(provider);
+        return;
+      } catch (redirectErr) {
+        console.error('[GoogleAuth Redirect]', redirectErr);
+      }
+    }
+
     var msg = translateGoogleError(err.code);
     if ($('screen-login').classList.contains('active')) showError('loginError', msg);
     else showError('regError', msg);
     showToast(msg, 'error');
   }
-       }
-
+               }
+     
 /* ============================================================
    AUTH — LOGOUT
    ============================================================ */
@@ -1648,7 +1665,7 @@ window.addEventListener('unhandledrejection', function (e) {
     }
 
     try {
-      // handleRedirectResult();
+      handleRedirectResult();
       initAuthListener();
     } catch (e) {
       console.error('[Bootstrap] auth error:', e);
