@@ -461,36 +461,21 @@ async function handleGoogleAuth() {
   clearError('regError');
 
   var provider = new firebase.auth.GoogleAuthProvider();
-  try {
-    var result = await auth.signInWithPopup(provider);
-    if (result && result.user) {
-      showToast('গুগল লগইন সফল', 'success');
-    }
-  } catch (err) {
-    console.error('[GoogleAuth]', err);
-    
-    // যদি WebView-এ পপ-আপ ব্লক হয়, তবে এটি স্বয়ংক্রিয়ভাবে Redirect মেথডে কাজ করবে
-    if (err.code === 'auth/popup-blocked' || 
-        err.code === 'auth/operation-not-supported-in-this-environment' || 
-        err.code === 'auth/cancelled-popup-request' ||
-        err.code === 'auth/popup-closed-by-user' ||
-        err.code === 'auth/internal-error') {
-      
-      console.log('[GoogleAuth] Popup restricted in WebView, switching to redirect...');
-      try {
-        await auth.signInWithRedirect(provider);
-        return;
-      } catch (redirectErr) {
-        console.error('[GoogleAuth Redirect]', redirectErr);
-      }
-    }
+  provider.setCustomParameters({ prompt: 'select_account' });
 
+  try {
+    await auth.signInWithRedirect(provider);
+  } catch (err) {
+    console.error('[GoogleAuth Redirect Error]', err);
     var msg = translateGoogleError(err.code);
-    if ($('screen-login').classList.contains('active')) showError('loginError', msg);
-    else showError('regError', msg);
+    if ($('screen-login') && $('screen-login').classList.contains('active')) {
+      showError('loginError', msg);
+    } else {
+      showError('regError', msg);
+    }
     showToast(msg, 'error');
   }
-               }
+}
      
 /* ============================================================
    AUTH — LOGOUT
@@ -1665,7 +1650,7 @@ window.addEventListener('unhandledrejection', function (e) {
     }
 
     try {
-      handleRedirectResult();
+      handleRedirectResult();//Google Login Redirect Handler
       initAuthListener();
     } catch (e) {
       console.error('[Bootstrap] auth error:', e);
