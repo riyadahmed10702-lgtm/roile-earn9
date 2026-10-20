@@ -187,7 +187,7 @@ function initAdminAuth() {
     try {
       var snap = await db.ref('admins/' + user.uid).once('value');
       if (!snap.exists()) {
-        alert('❌ আপনি অ্যাডমিন হিসেবে নিবন্ধিত নন।');
+        alert('❌ আপনি অ্যাডমিন নন। আপনার UID: [' + user.uid + ']');
         await auth.signOut();
         return;
       }
