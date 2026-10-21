@@ -953,7 +953,6 @@ function renderTasks() {
     el.addEventListener('click', function () { openTaskViewer(el.dataset.taskId); });
   });
 }
-
 /* ============================================================
    TASK VIEWER + TIMER (Server-Based Anti-Cheat)
    ============================================================ */
@@ -978,8 +977,7 @@ async function openTaskViewer(taskId) {
 
   AppState.currentTask = { id: taskId, title: t.title, desc: t.desc, link: t.link, reward: t.reward };
   AppState.linkOpened = false;
-   // অ্যাড দেখানোর জন্য WebView-কে সরাসরি লিংকে পাঠানো হচ্ছে
-window.location.href = t.link; 
+  
   $('viewerTitle').textContent = t.title || 'টাস্ক';
   $('viewerDesc').textContent = t.desc || '';
   $('btnClaim').disabled = true;
@@ -1017,22 +1015,17 @@ function startTaskTimer() {
     if (val <= 0) {
       clearInterval(AppState.timerInterval);
       AppState.timerInterval = null;
-// টাইমার শেষ হলে এই কোডটি চলবে
-if (val <= 0) {
-  clearInterval(AppState.timerInterval);
-  AppState.timerInterval = null;
-  $('btnClaim').disabled = false;
-  
-  // ✅ নেটিভ ক্রস বাটন দেখানোর কমান্ড (স্কেচওয়্যারের জন্য)
-  if (window.AndroidApp) {
-      window.AndroidApp.showCrossButton();
-  }
-  
-  showToast('টাইমার শেষ! এখন রিওয়ার্ড ক্লেইম করুন।', 'success');
-       }
+      $('btnClaim').disabled = false;
+      
+      // ✅ নেটিভ ক্রস বাটন দেখানোর কমান্ড (স্কেচওয়্যারের জন্য)
+      if (window.AndroidApp) {
+          window.AndroidApp.showCrossButton();
+      }
+      
+      showToast('টাইমার শেষ! এখন রিওয়ার্ড ক্লেইম করুন।', 'success');
+    }
   }, 1000);
-}
-
+             }
 /* ============================================================
    CLAIM REWARD (Server-Based Verification)
    ============================================================ */
