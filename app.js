@@ -47,6 +47,8 @@ const AppState = {
   currentTask: null,
   timerInterval: null,
   currentTimerValue: 0,
+  taskStartTime: null,
+  serverTimeOffset: 0,
   cdInterval: null,
   listeners: { profile: null, notice: null, tasks: null, history: null, modPanel: null, referral: null },
   historyTab: 'earnings',
@@ -176,7 +178,7 @@ function translateGoogleError(code) {
 }
 
 /* ============================================================
-   REFERRAL URL CAPTURE (Google Sign-up এর জন্য)
+   REFERRAL URL CAPTURE
    ============================================================ */
 function captureRefFromURL() {
   try {
@@ -245,7 +247,8 @@ function detachAllListeners() {
     AppState.cdInterval = null;
   }
 }
-   /* ============================================================
+
+/* ============================================================
    REFERRAL SYSTEM
    ============================================================ */
 function generateReferralCode(email) {
@@ -316,7 +319,6 @@ function attachReferralListener() {
   ref.on('value', cb);
   AppState.listeners.referral = { ref: ref, event: 'value', cb: cb };
 }
-
 /* ============================================================
    AUTH — REGISTER
    ============================================================ */
@@ -462,7 +464,6 @@ async function handleGoogleAuth() {
 
   var provider = new firebase.auth.GoogleAuthProvider();
   try {
-    // ওয়েবসাইট এবং অ্যাপ দুটোতেই কাজ করার জন্য Redirect ব্যবহার করা হলো
     await auth.signInWithRedirect(provider); 
   } catch (err) {
     console.error('[GoogleAuth]', err);
@@ -472,7 +473,7 @@ async function handleGoogleAuth() {
     showToast(msg, 'error');
   }
 }
-     
+
 /* ============================================================
    AUTH — LOGOUT
    ============================================================ */
@@ -571,9 +572,10 @@ async function skipReferralPrompt() {
     await db.ref('users/' + AppState.user.uid + '/referralAsked').set(true);
   } catch (e) { console.warn(e); }
   hideReferralPrompt();
-                  }
+}
+
 /* ============================================================
-   ENSURE PROFILE (BUG FIX — overwrite protection)
+   ENSURE PROFILE
    ============================================================ */
 async function ensureProfile(user) {
   var ref = db.ref('users/' + user.uid);
@@ -587,17 +589,14 @@ async function ensureProfile(user) {
     readFailed = true;
   }
 
-  // ✅ BUG FIX: read fail হলে কিছুই করব না
   if (readFailed) {
     console.warn('[ensureProfile] read failed — skip for safety');
     return;
   }
 
-  // প্রোফাইল আগে থেকেই আছে
   if (snap && snap.exists()) {
     var existingData = snap.val() || {};
 
-    // পুরোনো ইউজার — কিন্তু referralCode নেই?
     if (!existingData.referralCode) {
       var newCode = generateReferralCode(existingData.email || user.email || '');
       try {
@@ -615,10 +614,8 @@ async function ensureProfile(user) {
     return;
   }
 
-  // নতুন ইউজার তৈরি
   var deviceId = getOrCreateDeviceId();
 
-  // ✅ Device Lock check
   var lockInfo = await isDeviceLocked(deviceId, user.uid);
   if (lockInfo.locked) {
     alert('🚫 এই ডিভাইসে ইতিমধ্যে অন্য একটি অ্যাকাউন্ট আছে।');
@@ -628,8 +625,6 @@ async function ensureProfile(user) {
 
   var now = Date.now();
   var myRefCode = generateReferralCode(user.email || '');
-
-  // URL থেকে captured referral code
   var pendingRef = getPendingRef();
   var referrerUid = '';
 
@@ -714,10 +709,8 @@ function handleRedirectResult() {
    ============================================================ */
 async function checkVPN() {
   var result = { vpn: false, layer: null, ip: null, country: null };
-
   var ipData1 = null;
 
-  // Layer 1: ipwho.is — strong signals only
   try {
     ipData1 = await fetch('https://ipwho.is/').then(function (r) { return r.json(); });
     result.ip = ipData1.ip;
@@ -738,7 +731,6 @@ async function checkVPN() {
 
   if (!result.ip) return result;
 
-  // Layer 2: proxycheck.io — type VPN/TOR or risk 85+
   try {
     var r2 = await fetch('https://proxycheck.io/v2/' + result.ip + '?vpn=1&asn=1&risk=1').then(function (r) { return r.json(); });
     if (r2 && r2[result.ip]) {
@@ -805,13 +797,11 @@ function initAuthListener() {
     attachNoticeListener();
     attachTasksListener();
 
-    // ✅ Moderator status check — সাথে সাথে
     checkModeratorStatus();
 
     showScreen('screen-app');
     navigateTo('dashboard');
 
-    // Referral Popup
     var hasRef = prof && prof.referredBy;
     var asked = prof && prof.referralAsked === true;
     var pendingRef = getPendingRef();
@@ -819,7 +809,6 @@ function initAuthListener() {
       setTimeout(function () { showReferralPrompt(); }, 1200);
     }
 
-    // VPN check
     checkVPN().then(function (vres) {
       if (vres.vpn) {
         var layerText = {
@@ -851,8 +840,8 @@ function initAuthListener() {
       }
     });
   });
-                                          }
-     /* ============================================================
+  }
+/* ============================================================
    PROFILE LISTENER
    ============================================================ */
 function attachProfileListener() {
@@ -966,9 +955,9 @@ function renderTasks() {
 }
 
 /* ============================================================
-   TASK VIEWER + TIMER
+   TASK VIEWER + TIMER (Server-Based Anti-Cheat)
    ============================================================ */
-function openTaskViewer(taskId) {
+async function openTaskViewer(taskId) {
   var t = AppState.tasks[taskId];
   if (!t) return showToast('টাস্ক খুঁজে পাওয়া যায়নি', 'error');
 
@@ -977,6 +966,15 @@ function openTaskViewer(taskId) {
     showCooldownOverlay(cdLeft);
     return;
   }
+
+  // Firebase server time offset fetch
+  try {
+    var snap = await db.ref('.info/serverTimeOffset').once('value');
+    AppState.serverTimeOffset = snap.val() || 0;
+  } catch (e) {
+    AppState.serverTimeOffset = 0;
+  }
+  AppState.taskStartTime = Date.now() + AppState.serverTimeOffset;
 
   AppState.currentTask = { id: taskId, title: t.title, desc: t.desc, link: t.link, reward: t.reward };
   AppState.linkOpened = false;
@@ -992,6 +990,7 @@ function startTaskTimer() {
 
   var duration = AppState.settings.taskDuration || APP_CONST.taskDuration;
   AppState.currentTimerValue = duration;
+  var startClientTime = Date.now();
 
   var circle = $('timerProgress');
   var number = $('timerNumber');
@@ -1001,11 +1000,13 @@ function startTaskTimer() {
   number.textContent = duration;
 
   AppState.timerInterval = setInterval(function () {
-    AppState.currentTimerValue -= 1;
+    var elapsed = Math.floor((Date.now() - startClientTime) / 1000);
+    var remaining = duration - elapsed;
+    AppState.currentTimerValue = remaining > 0 ? remaining : 0;
     var val = AppState.currentTimerValue;
-    number.textContent = val > 0 ? val : 0;
+    number.textContent = val;
     var progress = (duration - val) / duration;
-    circle.style.strokeDashoffset = circumference * progress;
+    circle.style.strokeDashoffset = circumference * Math.min(1, Math.max(0, progress));
 
     if (val <= 5) circle.style.stroke = '#ef4444';
     else if (val <= 15) circle.style.stroke = '#f59e0b';
@@ -1021,7 +1022,7 @@ function startTaskTimer() {
 }
 
 /* ============================================================
-   CLAIM REWARD
+   CLAIM REWARD (Server-Based Verification)
    ============================================================ */
 async function handleClaimReward() {
   var btn = $('btnClaim');
@@ -1030,6 +1031,16 @@ async function handleClaimReward() {
 
   if (!AppState.linkOpened) {
     showToast('প্রথমে "টাস্ক ওপেন করুন" বাটনে ক্লিক করুন।', 'warning');
+    return;
+  }
+
+  // Anti-Cheat: Firebase Server-based elapsed time check
+  var duration = Number(AppState.settings.taskDuration) || APP_CONST.taskDuration;
+  var currentServerTime = Date.now() + (AppState.serverTimeOffset || 0);
+  var elapsedSec = (currentServerTime - (AppState.taskStartTime || 0)) / 1000;
+
+  if (!AppState.taskStartTime || elapsedSec < duration) {
+    showToast('টাস্কের সম্পূর্ণ সময় পার হয়নি! অপেক্ষা করুন।', 'error');
     return;
   }
 
@@ -1042,7 +1053,6 @@ async function handleClaimReward() {
   var now = Date.now();
 
   try {
-    // ✅ Atomic transaction — double-click হলেও একবারই কাজ করবে
     var balanceRef = db.ref('users/' + uid + '/balance');
     var totalEarnedRef = db.ref('users/' + uid + '/totalEarned');
 
@@ -1058,7 +1068,6 @@ async function handleClaimReward() {
       return (Number(current) || 0) + reward;
     });
 
-    // Earnings record
     await db.ref('users/' + uid + '/earnings/' + now).set({
       taskId: task.id,
       taskName: task.title || 'টাস্ক',
@@ -1069,6 +1078,7 @@ async function handleClaimReward() {
     setCooldown(AppState.settings.cooldownDuration || APP_CONST.cooldown);
     showToast('৳' + formatMoney(reward) + ' আয় হয়েছে!', 'success');
     AppState.currentTask = null;
+    AppState.taskStartTime = null;
     navigateTo('tasks');
   } catch (err) {
     console.error('[Claim]', err);
@@ -1104,6 +1114,7 @@ function getCooldownRemaining() {
   var left = Math.ceil((until - Date.now()) / 1000);
   return left > 0 ? left : 0;
 }
+
 function showCooldownOverlay(seconds) {
   var overlay = $('cooldownOverlay');
   var num = $('cdNumber');
@@ -1156,8 +1167,7 @@ async function autoAssignModerator() {
     console.error('[autoAssignModerator]', err);
     return null;
   }
-}
-
+             }
 /* ============================================================
    WITHDRAW
    ============================================================ */
@@ -1243,6 +1253,7 @@ async function handleWithdraw() {
     btn.textContent = 'রিকোয়েস্ট পাঠান';
   }
 }
+
 /* ============================================================
    HISTORY
    ============================================================ */
@@ -1469,10 +1480,10 @@ async function handleModReject(wdId) {
 }
 
 /* ============================================================
-   INJECT GOOGLE BUTTONS
+   INJECT GOOGLE BUTTONS (DISABLED)
    ============================================================ */
 function injectGoogleButtons() {
-  return; // 
+  return;
   var googleSvg = '<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">' +
     '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>' +
     '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>' +
@@ -1546,6 +1557,8 @@ function bindEvents() {
 
   $('btnBackFromTask').addEventListener('click', function () {
     if (AppState.timerInterval) { clearInterval(AppState.timerInterval); AppState.timerInterval = null; }
+    AppState.currentTask = null;
+    AppState.taskStartTime = null;
     navigateTo('tasks');
   });
 
@@ -1556,6 +1569,27 @@ function bindEvents() {
   });
 
   $('btnClaim').addEventListener('click', handleClaimReward);
+
+  // Auto-Claim on Return from Browser
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && document.visibilityState === 'visible') {
+      if (AppState.currentTask && AppState.linkOpened) {
+        var duration = Number(AppState.settings.taskDuration) || APP_CONST.taskDuration;
+        var currentServerTime = Date.now() + (AppState.serverTimeOffset || 0);
+        var elapsedSec = (currentServerTime - (AppState.taskStartTime || 0)) / 1000;
+        
+        if (elapsedSec >= duration) {
+          AppState.currentTimerValue = 0;
+          var btnClaim = $('btnClaim');
+          if (btnClaim) btnClaim.disabled = false;
+        }
+
+        if (AppState.currentTimerValue <= 0) {
+          handleClaimReward();
+        }
+      }
+    }
+  });
 
   $all('.method-btn').forEach(function (mb) {
     mb.addEventListener('click', function () {
