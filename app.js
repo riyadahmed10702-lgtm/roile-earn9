@@ -1018,34 +1018,18 @@ function startTaskTimer() {
       clearInterval(AppState.timerInterval);
       AppState.timerInterval = null;
 // টাইমার শেষ হলে এই কোডটি চলবে
-var crossBtn = document.createElement('div');
-crossBtn.innerHTML = '✕';
-crossBtn.style.position = 'fixed';
-crossBtn.style.top = '20px';
-crossBtn.style.right = '20px';
-crossBtn.style.width = '50px';
-crossBtn.style.height = '50px';
-crossBtn.style.borderRadius = '50%';
-crossBtn.style.background = '#ef4444';
-crossBtn.style.color = 'white';
-crossBtn.style.fontSize = '24px';
-crossBtn.style.fontWeight = 'bold';
-crossBtn.style.display = 'flex';
-crossBtn.style.alignItems = 'center';
-crossBtn.style.justifyContent = 'center';
-crossBtn.style.zIndex = '999999';
-crossBtn.style.cursor = 'pointer';
-crossBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
-
-crossBtn.onclick = function() {
-    // ক্রস বাটনে ক্লিক করলে আবার মেইন অ্যাপে ফিরে আসবে
-    window.location.href = "https://riyadahmed10702-lgtm.github.io/roile-earn9/"; 
-};
-
-// স্ক্রিনে বাটনটি যুক্ত করা হলো
-document.body.appendChild(crossBtn);
-      showToast('টাইমার শেষ! এখন রিওয়ার্ড ক্লেইম করুন।', 'success');
-    }
+if (val <= 0) {
+  clearInterval(AppState.timerInterval);
+  AppState.timerInterval = null;
+  $('btnClaim').disabled = false;
+  
+  // ✅ নেটিভ ক্রস বাটন দেখানোর কমান্ড (স্কেচওয়্যারের জন্য)
+  if (window.AndroidApp) {
+      window.AndroidApp.showCrossButton();
+  }
+  
+  showToast('টাইমার শেষ! এখন রিওয়ার্ড ক্লেইম করুন।', 'success');
+       }
   }, 1000);
 }
 
@@ -1105,6 +1089,10 @@ async function handleClaimReward() {
 
     setCooldown(AppState.settings.cooldownDuration || APP_CONST.cooldown);
     showToast('৳' + formatMoney(reward) + ' আয় হয়েছে!', 'success');
+     // ✅ ক্লেইম শেষে ক্রস বাটন হাইড করা
+if (window.AndroidApp) {
+    window.AndroidApp.hideCrossButton();
+}
     AppState.currentTask = null;
     AppState.taskStartTime = null;
     navigateTo('tasks');
@@ -1721,7 +1709,7 @@ window.addEventListener('unhandledrejection', function (e) {
     }, 20000);
   }, APP_CONST.splash);
 })();
-// ✅ ক্রস (X) বাটনের কাজ
+// ✅ ক্রস (X) বাটনের কাজ (নেটিভ বাটন হাইড করার জন্য)
 document.addEventListener('DOMContentLoaded', function() {
   var closeBtn = document.getElementById('btnCloseTaskViewer');
   if (closeBtn) {
@@ -1732,7 +1720,13 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       AppState.currentTask = null;
       AppState.taskStartTime = null;
-      navigateTo('tasks'); // টাস্ক পেজে ফিরে যাবে
+      
+      // নেটিভ ক্রস বাটন হাইড করা
+      if (window.AndroidApp) {
+          window.AndroidApp.hideCrossButton();
+      }
+      
+      navigateTo('tasks');
     });
   }
 });
