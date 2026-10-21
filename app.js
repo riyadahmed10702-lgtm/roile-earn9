@@ -1693,3 +1693,18 @@ window.addEventListener('unhandledrejection', function (e) {
     }, 20000);
   }, APP_CONST.splash);
 })();
+// ✅ ক্রস (X) বাটনের কাজ
+document.addEventListener('DOMContentLoaded', function() {
+  var closeBtn = document.getElementById('btnCloseTaskViewer');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      if (AppState.timerInterval) { 
+          clearInterval(AppState.timerInterval); 
+          AppState.timerInterval = null; 
+      }
+      AppState.currentTask = null;
+      AppState.taskStartTime = null;
+      navigateTo('tasks'); // টাস্ক পেজে ফিরে যাবে
+    });
+  }
+});
