@@ -178,24 +178,17 @@ function initAdminAuth() {
     var ALLOWED_ADMIN_EMAIL = 'riyadahmed10702@gmail.com';
     var userEmail = (user.email || '').toLowerCase().trim();
 
+    // শুধু আপনার ইমেইল দিয়ে লগইন করা যাবে
     if (userEmail !== ALLOWED_ADMIN_EMAIL) {
-      alert('❌ আপনি এই প্যানেলের অ্যাডমিন নন।\n\nশুধু ' + ALLOWED_ADMIN_EMAIL + ' দিয়েই লগইন করা যাবে।');
+      alert('❌ আপনি এই প্যানেলের অ্যাডমিন নন।');
       await auth.signOut();
       return;
     }
 
-    try {
-      var snap = await db.ref('admins/' + user.uid).once('value');
-      if (!snap.exists()) {
-        alert('❌ আপনি অ্যাডমিন নন। আপনার UID: [' + user.uid + ']');
-        await auth.signOut();
-        return;
-      }
-    } catch (e) {
-      console.error('[AdminCheck]', e);
-      alert('চেক করা যায়নি: ' + e.message);
-      await auth.signOut();
-      return;
+    // ডিভাইস লক (শুধু এই ফোনেই কাজ করবে)
+    var deviceLock = localStorage.getItem('roile_admin_phone_lock');
+    if (deviceLock !== 'locked') {
+      localStorage.setItem('roile_admin_phone_lock', 'locked');
     }
 
     AState.user = user;
@@ -205,8 +198,7 @@ function initAdminAuth() {
     showScreen('admin-app');
     attachAllListeners();
   });
-}
-
+                          }
 /* ============================================================
    LISTENERS
    ============================================================ */
