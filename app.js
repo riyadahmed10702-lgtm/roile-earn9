@@ -755,8 +755,6 @@ async function checkVPN() {
    ============================================================ */
 function initAuthListener() {
   auth.onAuthStateChanged(async function (user) {
-    console.log('[Auth] state:', user ? user.uid : 'signed out');
-
     if (!user) {
       AppState.user = null;
       AppState.profile = null;
@@ -796,51 +794,65 @@ function initAuthListener() {
     attachProfileListener();
     attachNoticeListener();
     attachTasksListener();
-
     checkModeratorStatus();
 
     showScreen('screen-app');
     navigateTo('dashboard');
 
-    var hasRef = prof && prof.referredBy;
-    var asked = prof && prof.referralAsked === true;
-    var pendingRef = getPendingRef();
-    if (!hasRef && !asked && !pendingRef) {
-      setTimeout(function () { showReferralPrompt(); }, 1200);
+    // ✅ অ্যাপ রিলোড হলে চেক করবে আগের কোনো টাস্ক চলছিল কিনা
+    var savedTask = localStorage.getItem('activeTask');
+    var savedStartTime = localStorage.getItem('activeTaskStartTime');
+    
+    if (savedTask && savedStartTime) {
+        try {
+            AppState.currentTask = JSON.parse(savedTask);
+            AppState.taskStartTime = Number(savedStartTime);
+            
+            var offset = 0;
+            try {
+                var snap = await db.ref('.info/serverTimeOffset').once('value');
+                offset = snap.val() || 0;
+            } catch (e) {}
+            AppState.serverTimeOffset = offset;
+            
+            var duration = AppState.settings.taskDuration || APP_CONST.taskDuration;
+            var currentServerTime = Date.now() + offset;
+            var elapsedSec = (currentServerTime - AppState.taskStartTime) / 1000;
+            var remaining = duration - Math.floor(elapsedSec);
+            
+            $('viewerTitle').textContent = AppState.currentTask.title || 'টাস্ক';
+            $('viewerDesc').textContent = AppState.currentTask.desc || '';
+            
+            if (remaining > 0) {
+                AppState.currentTimerValue = remaining;
+                $('btnClaim').disabled = true;
+                navigateTo('task-viewer');
+                startTaskTimer();
+            } else {
+                AppState.currentTimerValue = 0;
+                $('btnClaim').disabled = false;
+                navigateTo('task-viewer');
+                if (window.AndroidApp) window.AndroidApp.showCrossButton();
+            }
+        } catch(e) { console.log("Restore task error", e); }
+    } else {
+        var hasRef = prof && prof.referredBy;
+        var asked = prof && prof.referralAsked === true;
+        var pendingRef = getPendingRef();
+        if (!hasRef && !asked && !pendingRef) {
+          setTimeout(function () { showReferralPrompt(); }, 1200);
+        }
     }
 
     checkVPN().then(function (vres) {
       if (vres.vpn) {
-        var layerText = {
-          'ipwho-vpn': 'VPN শনাক্ত',
-          'ipwho-proxy': 'Proxy শনাক্ত',
-          'ipwho-tor': 'TOR শনাক্ত',
-          'proxycheck-vpn': 'VPN শনাক্ত (উন্নত)',
-          'proxycheck-tor': 'TOR শনাক্ত',
-          'proxycheck-risk': 'সন্দেহজনক Proxy'
-        };
-        var msg = layerText[vres.layer] || 'সন্দেহজনক সংযোগ';
-
-        alert('🚫 ' + msg + '!\n\nRoile Earn9 ব্যবহার করতে VPN / Proxy সম্পূর্ণ বন্ধ করুন।');
-
-        if (AppState.user) {
-          db.ref('vpnDetections/' + AppState.user.uid).push({
-            layer: vres.layer,
-            ip: vres.ip || '',
-            country: vres.country || '',
-            timestamp: Date.now(),
-            userAgent: navigator.userAgent || ''
-          }).catch(function () {});
-        }
-
+        alert('🚫 VPN / Proxy শনাক্ত হয়েছে! বন্ধ করুন।');
         detachAllListeners();
         auth.signOut();
-      } else {
-        console.log('[VPN] ✓ Clean. IP:', vres.ip);
       }
     });
   });
-  }
+                                       }
 /* ============================================================
    PROFILE LISTENER
    ============================================================ */
@@ -966,30 +978,37 @@ async function openTaskViewer(taskId) {
     return;
   }
 
-  // Firebase server time offset fetch
   try {
     var snap = await db.ref('.info/serverTimeOffset').once('value');
     AppState.serverTimeOffset = snap.val() || 0;
   } catch (e) {
     AppState.serverTimeOffset = 0;
   }
+  
   AppState.taskStartTime = Date.now() + AppState.serverTimeOffset;
-
   AppState.currentTask = { id: taskId, title: t.title, desc: t.desc, link: t.link, reward: t.reward };
   AppState.linkOpened = false;
+
+  // ✅ টাস্ক এবং টাইমার ফোনের মেমোরিতে সেভ করে রাখা হচ্ছে
+  localStorage.setItem('activeTask', JSON.stringify(AppState.currentTask));
+  localStorage.setItem('activeTaskStartTime', AppState.taskStartTime);
   
   $('viewerTitle').textContent = t.title || 'টাস্ক';
   $('viewerDesc').textContent = t.desc || '';
   $('btnClaim').disabled = true;
   navigateTo('task-viewer');
   startTaskTimer();
-}
-
+       }
 function startTaskTimer() {
   if (AppState.timerInterval) clearInterval(AppState.timerInterval);
 
   var duration = AppState.settings.taskDuration || APP_CONST.taskDuration;
-  AppState.currentTimerValue = duration;
+  
+  // যদি রিলোড হওয়ার পর আগের টাইমার থেকে থাকে, তবে সেটাই ব্যবহার করবে
+  if (!AppState.currentTimerValue || AppState.currentTimerValue === duration) {
+      AppState.currentTimerValue = duration;
+  }
+  
   var startClientTime = Date.now();
 
   var circle = $('timerProgress');
@@ -997,15 +1016,15 @@ function startTaskTimer() {
   var circumference = 2 * Math.PI * 52;
   circle.style.strokeDasharray = circumference;
   circle.style.strokeDashoffset = 0;
-  number.textContent = duration;
+  number.textContent = AppState.currentTimerValue;
 
   AppState.timerInterval = setInterval(function () {
     var elapsed = Math.floor((Date.now() - startClientTime) / 1000);
-    var remaining = duration - elapsed;
-    AppState.currentTimerValue = remaining > 0 ? remaining : 0;
-    var val = AppState.currentTimerValue;
+    var remaining = AppState.currentTimerValue - elapsed;
+    
+    var val = remaining > 0 ? remaining : 0;
     number.textContent = val;
-    var progress = (duration - val) / duration;
+    var progress = (AppState.currentTimerValue - val) / AppState.currentTimerValue;
     circle.style.strokeDashoffset = circumference * Math.min(1, Math.max(0, progress));
 
     if (val <= 5) circle.style.stroke = '#ef4444';
@@ -1017,7 +1036,6 @@ function startTaskTimer() {
       AppState.timerInterval = null;
       $('btnClaim').disabled = false;
       
-      // ✅ নেটিভ ক্রস বাটন দেখানোর কমান্ড (স্কেচওয়্যারের জন্য)
       if (window.AndroidApp) {
           window.AndroidApp.showCrossButton();
       }
@@ -1025,7 +1043,7 @@ function startTaskTimer() {
       showToast('টাইমার শেষ! এখন রিওয়ার্ড ক্লেইম করুন।', 'success');
     }
   }, 1000);
-             }
+     }
 /* ============================================================
    CLAIM REWARD (Server-Based Verification)
    ============================================================ */
@@ -1039,7 +1057,6 @@ async function handleClaimReward() {
     return;
   }
 
-  // Anti-Cheat: Firebase Server-based elapsed time check
   var duration = Number(AppState.settings.taskDuration) || APP_CONST.taskDuration;
   var currentServerTime = Date.now() + (AppState.serverTimeOffset || 0);
   var elapsedSec = (currentServerTime - (AppState.taskStartTime || 0)) / 1000;
@@ -1065,9 +1082,7 @@ async function handleClaimReward() {
       return (Number(current) || 0) + reward;
     });
 
-    if (!balResult.committed) {
-      throw new Error('Balance update failed');
-    }
+    if (!balResult.committed) throw new Error('Balance update failed');
 
     await totalEarnedRef.transaction(function (current) {
       return (Number(current) || 0) + reward;
@@ -1082,12 +1097,18 @@ async function handleClaimReward() {
 
     setCooldown(AppState.settings.cooldownDuration || APP_CONST.cooldown);
     showToast('৳' + formatMoney(reward) + ' আয় হয়েছে!', 'success');
-     // ✅ ক্লেইম শেষে ক্রস বাটন হাইড করা
-if (window.AndroidApp) {
-    window.AndroidApp.hideCrossButton();
-}
+    
+    if (window.AndroidApp) {
+        window.AndroidApp.hideCrossButton();
+    }
+    
+    // ✅ ক্লেইম শেষে ফোনের মেমোরি ক্লিয়ার করা হচ্ছে
+    localStorage.removeItem('activeTask');
+    localStorage.removeItem('activeTaskStartTime');
+    
     AppState.currentTask = null;
     AppState.taskStartTime = null;
+    AppState.currentTimerValue = 0;
     navigateTo('tasks');
   } catch (err) {
     console.error('[Claim]', err);
@@ -1096,8 +1117,7 @@ if (window.AndroidApp) {
   } finally {
     btn.textContent = 'রিওয়ার্ড ক্লেইম করুন';
   }
-}
-
+       }
 /* ============================================================
    COOLDOWN
    ============================================================ */
