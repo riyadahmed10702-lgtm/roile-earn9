@@ -1701,7 +1701,6 @@ window.addEventListener('unhandledrejection', function (e) {
   });
 
   setTimeout(function () {
-    showScreen('screen-login');
 
     if (!auth || !db) {
       console.error('[Bootstrap] Firebase not ready');
