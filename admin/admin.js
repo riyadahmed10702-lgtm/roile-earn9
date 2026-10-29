@@ -131,18 +131,6 @@ async function handleAdminLogin() {
   }
 }
 
-async function handleAdminGoogle() {
-  clearError('adminLoginError');
-  var provider = new firebase.auth.GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-  try {
-    await auth.signInWithPopup(provider);
-  } catch (err) {
-    console.error('[AdminGoogle]', err);
-    showError('adminLoginError', 'Google লগইন ব্যর্থ: ' + (err.message || ''));
-  }
-}
-
 async function handleAdminLogout() {
   if (!confirm('লগআউট করবেন?')) return;
   try {
@@ -154,18 +142,23 @@ async function handleAdminLogout() {
   }
 }
 
-/* ✅ Listener detach helper (fix #4) */
+/* ✅ Detach listeners using { ref, event, cb } */
 function detachAdminListeners() {
   Object.keys(AState.listeners).forEach(function (k) {
     var l = AState.listeners[k];
-    if (l && typeof l.off === 'function') {
-      try { l.off(); } catch (e) {}
+    if (l && l.ref && typeof l.ref.off === 'function') {
+      try {
+        l.ref.off(l.event || 'value', l.cb);
+      } catch (e) {
+        console.warn('[Admin] Detach error:', e);
+      }
     }
     AState.listeners[k] = null;
   });
 }
+
 /* ============================================================
-   AUTH STATE + ADMIN CHECK
+   AUTH STATE + ADMIN & DEVICE LOCK CHECK
    ============================================================ */
 function initAdminAuth() {
   auth.onAuthStateChanged(async function (user) {
@@ -178,17 +171,38 @@ function initAdminAuth() {
     var ALLOWED_ADMIN_EMAIL = 'riyadahmed10702@gmail.com';
     var userEmail = (user.email || '').toLowerCase().trim();
 
-    // শুধু আপনার ইমেইল দিয়ে লগইন করা যাবে
+    // শুধু নির্দিষ্ট অ্যাডমিন ইমেইল দিয়ে লগইন সম্ভব
     if (userEmail !== ALLOWED_ADMIN_EMAIL) {
       alert('❌ আপনি এই প্যানেলের অ্যাডমিন নন।');
       await auth.signOut();
       return;
     }
 
-    // ডিভাইস লক (শুধু এই ফোনেই কাজ করবে)
+    // ডিভাইস লক চেকিং (ডাটাবেজের সাথে সিঙ্ক করে অন্য ডিভাইস আটকানো)
     var deviceLock = localStorage.getItem('roile_admin_phone_lock');
-    if (deviceLock !== 'locked') {
-      localStorage.setItem('roile_admin_phone_lock', 'locked');
+    try {
+      var lockSnap = await db.ref('settings/adminDeviceLock').once('value');
+      var registeredLock = lockSnap.val();
+
+      if (!registeredLock) {
+        // প্রথমবার লগইন হলে এই ডিভাইসের লক কি ডাটাবেজে ও লোকালে সেভ হবে
+        var lockToken = deviceLock || ('locked_' + Math.random().toString(36).substring(2, 10));
+        await db.ref('settings/adminDeviceLock').set(lockToken);
+        localStorage.setItem('roile_admin_phone_lock', lockToken);
+      } else {
+        if (!deviceLock || deviceLock !== registeredLock) {
+          alert('❌ ডিভাইস লক সক্রিয়: এই ডিভাইস থেকে অ্যাডমিন অ্যাক্সেস অনুমোদিত নয়।');
+          await auth.signOut();
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('[AdminDeviceLock]', err);
+      if (!deviceLock) {
+        alert('❌ ডিভাইস লক সক্রিয়: অনুমোদিত ডিভাইস ছাড়া লগইন সম্ভব নয়।');
+        await auth.signOut();
+        return;
+      }
     }
 
     AState.user = user;
@@ -198,7 +212,8 @@ function initAdminAuth() {
     showScreen('admin-app');
     attachAllListeners();
   });
-                          }
+}
+
 /* ============================================================
    LISTENERS
    ============================================================ */
@@ -212,7 +227,7 @@ function attachAllListeners() {
     renderUsers();
   };
   usersRef.on('value', usersCb);
-  AState.listeners.users = usersRef;
+  AState.listeners.users = { ref: usersRef, event: 'value', cb: usersCb };
 
   var tasksRef = db.ref('tasks');
   var tasksCb = function (s) {
@@ -221,7 +236,7 @@ function attachAllListeners() {
     renderTasks();
   };
   tasksRef.on('value', tasksCb);
-  AState.listeners.tasks = tasksRef;
+  AState.listeners.tasks = { ref: tasksRef, event: 'value', cb: tasksCb };
 
   var wdRef = db.ref('withdrawals');
   var wdCb = function (s) {
@@ -230,7 +245,7 @@ function attachAllListeners() {
     renderWithdrawals();
   };
   wdRef.on('value', wdCb);
-  AState.listeners.withdrawals = wdRef;
+  AState.listeners.withdrawals = { ref: wdRef, event: 'value', cb: wdCb };
 
   var modsRef = db.ref('moderators');
   var modsCb = function (s) {
@@ -239,7 +254,7 @@ function attachAllListeners() {
     renderUsers();
   };
   modsRef.on('value', modsCb);
-  AState.listeners.moderators = modsRef;
+  AState.listeners.moderators = { ref: modsRef, event: 'value', cb: modsCb };
 
   var settingsRef = db.ref('settings');
   var settingsCb = function (s) {
@@ -249,7 +264,7 @@ function attachAllListeners() {
     if (nt) nt.value = AState.settings.notice || '';
   };
   settingsRef.on('value', settingsCb);
-  AState.listeners.settings = settingsRef;
+  AState.listeners.settings = { ref: settingsRef, event: 'value', cb: settingsCb };
 }
 
 /* ============================================================
@@ -277,7 +292,8 @@ function renderDashboard() {
   $('statPendingWd').textContent = pending;
   $('statTotalBalance').textContent = '৳' + formatMoney(totalBalance);
   $('statTasks').textContent = activeTasks;
-              }
+}
+
 /* ============================================================
    USERS
    ============================================================ */
@@ -339,6 +355,11 @@ async function handleUserAction(action, uid) {
   var u = AState.users[uid];
   if (!u) return;
 
+  // অ্যাডমিন সুরক্ষামূলক চেক
+  if (u.role === 'admin' && action !== 'balance') {
+    return showToast('অ্যাডমিনকে পরিবর্তন করা যাবে না', 'error');
+  }
+
   if (action === 'ban') {
     var willBan = !u.banned;
     if (!confirm(willBan ? 'ইউজারকে Ban করবেন?' : 'Unban করবেন?')) return;
@@ -393,11 +414,15 @@ function renderTasks() {
   list.innerHTML = ids.map(function (tid) {
     var t = AState.tasks[tid];
     var activeBadge = t.active ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-rejected">Inactive</span>';
+    var typeText = t.type === 'cpa' ? 'CPA (গেম/সার্ভে)' : 'Timer (ভিডিও/ওয়েবসাইট)';
+    var capVal = (typeof t.cap === 'number' && t.cap > 0) ? t.cap : 1;
+
     return '<div class="list-item">' +
       '<div class="list-item-head">' +
         '<div>' +
           '<div class="list-item-title">' + escapeHtml(t.title || '') + ' ' + activeBadge + '</div>' +
           '<div class="list-item-sub">' + escapeHtml(t.desc || '') + '</div>' +
+          '<div class="list-item-sub">ধরন: ' + typeText + ' | ক্যাপ: ' + capVal + ' বার/দিন</div>' +
           '<div class="list-item-sub">রিওয়ার্ড: ৳' + formatMoney(t.reward) + '</div>' +
           '<div class="list-item-sub">লিংক: ' + escapeHtml(t.link || '') + '</div>' +
         '</div>' +
@@ -427,6 +452,8 @@ function openTaskModal(taskId) {
     $('taskModalTitle').textContent = 'টাস্ক এডিট';
     $('taskTitle').value = t.title || '';
     $('taskDesc').value = t.desc || '';
+    if ($('taskType')) $('taskType').value = t.type || 'timer';
+    if ($('taskCap')) $('taskCap').value = (typeof t.cap === 'number' && t.cap > 0) ? t.cap : 1;
     $('taskLink').value = t.link || '';
     $('taskReward').value = t.reward || 0;
     $('taskActive').checked = !!t.active;
@@ -434,6 +461,8 @@ function openTaskModal(taskId) {
     $('taskModalTitle').textContent = 'নতুন টাস্ক';
     $('taskTitle').value = '';
     $('taskDesc').value = '';
+    if ($('taskType')) $('taskType').value = 'timer';
+    if ($('taskCap')) $('taskCap').value = 1;
     $('taskLink').value = '';
     $('taskReward').value = '';
     $('taskActive').checked = true;
@@ -448,16 +477,27 @@ function closeTaskModal() {
 async function saveTask() {
   var title = ($('taskTitle').value || '').trim();
   var desc = ($('taskDesc').value || '').trim();
+  var type = ($('taskType') && $('taskType').value === 'cpa') ? 'cpa' : 'timer';
+  var cap = Math.max(1, parseInt($('taskCap') ? $('taskCap').value : 1, 10) || 1);
   var link = ($('taskLink').value || '').trim();
   var reward = Number($('taskReward').value || 0);
   var active = $('taskActive').checked;
 
   if (!title) return showError('taskModalError', 'টাইটেল দিন।');
+  if (isNaN(cap) || cap < 1) return showError('taskModalError', 'Daily Cap কমপক্ষে ১ হতে হবে।');
   if (!link) return showError('taskModalError', 'লিংক দিন।');
   if (!/^https?:\/\//i.test(link)) return showError('taskModalError', 'লিংক https:// বা http:// দিয়ে শুরু হতে হবে।');
   if (!reward || reward <= 0) return showError('taskModalError', 'রিওয়ার্ড দিন।');
 
-  var data = { title: title, desc: desc, link: link, reward: reward, active: active };
+  var data = {
+    title: title,
+    desc: desc,
+    type: type,
+    cap: cap,
+    link: link,
+    reward: reward,
+    active: active
+  };
 
   try {
     if (AState.editingTaskId) {
@@ -481,7 +521,8 @@ async function handleTaskAction(action, tid) {
     await db.ref('tasks/' + tid).remove();
     showToast('ডিলিট হয়েছে', 'info');
   }
-       }
+}
+
 /* ============================================================
    WITHDRAWALS
    ============================================================ */
@@ -642,7 +683,8 @@ async function handleModAction(action, uid) {
     await db.ref('users/' + uid + '/role').set('user');
     showToast('সরানো হয়েছে', 'info');
   }
-                              }
+}
+
 /* ============================================================
    NOTICE + SETTINGS
    ============================================================ */
@@ -655,7 +697,6 @@ async function saveNotice() {
   } catch (e) { showToast('সমস্যা: ' + e.message, 'error'); }
 }
 
-/* ✅ Fix #5: 0 value support */
 function fillSettings() {
   var s = AState.settings || {};
   if ($('setMinWithdraw')) $('setMinWithdraw').value = (typeof s.minWithdraw === 'number') ? s.minWithdraw : 50;
@@ -704,7 +745,6 @@ function switchTab(tab) {
    ============================================================ */
 function bindAdminEvents() {
   $('btnAdminLogin').addEventListener('click', handleAdminLogin);
-  $('btnAdminGoogle').addEventListener('click', handleAdminGoogle);
   $('btnAdminLogout').addEventListener('click', handleAdminLogout);
 
   $('adminPassword').addEventListener('keydown', function (e) {
