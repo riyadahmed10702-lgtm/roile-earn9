@@ -1,5 +1,5 @@
 /* ============================================================
-   Roile Earn9 — app.js
+   Roile Earn9 — app.js (PART 1: Config, State, Helpers, Referral)
    ============================================================ */
 'use strict';
 
@@ -268,7 +268,9 @@ function updateReferralUI(data) {
   var subEl = $('refSubtitle');
   var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
   var myCount = data.referralCount || 0;
-  var unlocked = data.referralUnlocked || required === 0 || (required > 0 && myCount >= required);
+
+  // Bug Fix 4: Referral Unlock Logic
+  var unlocked = (required === 0) || (myCount >= required);
 
   if (statusEl) {
     if (unlocked) {
@@ -298,11 +300,8 @@ function attachReferralListener() {
     var data = snap.val() || {};
     var count = Object.keys(data).length;
     var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
-    var needUnlock = required > 0 && count >= required &&
-                     !(AppState.profile && AppState.profile.referralUnlocked);
-    var isUnlocked = (AppState.profile && AppState.profile.referralUnlocked) ||
-                     (required > 0 && count >= required) ||
-                     required === 0;
+    var isUnlocked = (required === 0) || (count >= required);
+    var needUnlock = isUnlocked && !(AppState.profile && AppState.profile.referralUnlocked);
 
     updateReferralUI({
       referralCode: myCode,
@@ -319,6 +318,10 @@ function attachReferralListener() {
   ref.on('value', cb);
   AppState.listeners.referral = { ref: ref, event: 'value', cb: cb };
 }
+/* ============================================================
+   Roile Earn9 — app.js (PART 2: Auth, Profile Setup & VPN Check)
+   ============================================================ */
+
 /* ============================================================
    AUTH — REGISTER
    ============================================================ */
@@ -491,7 +494,7 @@ async function handleLogout() {
 }
 
 /* ============================================================
-   REFERRAL PROMPT (Google Signup-এর জন্য)
+   REFERRAL PROMPT (Google Signup Modal)
    ============================================================ */
 function showReferralPrompt() {
   var modal = $('referralPromptModal');
@@ -501,6 +504,11 @@ function showReferralPrompt() {
 function hideReferralPrompt() {
   var modal = $('referralPromptModal');
   if (modal) modal.classList.add('hidden');
+  
+  // Bug Fix 5: Referral Prompt Loop Fix
+  if (AppState.user) {
+    db.ref('users/' + AppState.user.uid + '/referralAsked').set(true).catch(function () {});
+  }
 }
 
 async function applyReferralFromPrompt() {
@@ -748,7 +756,10 @@ async function checkVPN() {
   } catch (e) { console.warn('[VPN L2]', e); }
 
   return result;
-}
+             }
+/* ============================================================
+   Roile Earn9 — app.js (PART 3: Listeners & Task Rendering)
+   ============================================================ */
 
 /* ============================================================
    AUTH STATE LISTENER
@@ -804,44 +815,45 @@ function initAuthListener() {
     var savedStartTime = localStorage.getItem('activeTaskStartTime');
     
     if (savedTask && savedStartTime) {
+      try {
+        AppState.currentTask = JSON.parse(savedTask);
+        AppState.taskStartTime = Number(savedStartTime);
+        AppState.linkOpened = true; // Bug Fix 1: Restore Task Error Fix
+        
+        var offset = 0;
         try {
-            AppState.currentTask = JSON.parse(savedTask);
-            AppState.taskStartTime = Number(savedStartTime);
-            
-            var offset = 0;
-            try {
-                var snap = await db.ref('.info/serverTimeOffset').once('value');
-                offset = snap.val() || 0;
-            } catch (e) {}
-            AppState.serverTimeOffset = offset;
-            
-            var duration = AppState.settings.taskDuration || APP_CONST.taskDuration;
-            var currentServerTime = Date.now() + offset;
-            var elapsedSec = (currentServerTime - AppState.taskStartTime) / 1000;
-            var remaining = duration - Math.floor(elapsedSec);
-            
-            $('viewerTitle').textContent = AppState.currentTask.title || 'টাস্ক';
-            $('viewerDesc').textContent = AppState.currentTask.desc || '';
-            
-            if (remaining > 0) {
-                AppState.currentTimerValue = remaining;
-                $('btnClaim').disabled = true;
-                navigateTo('task-viewer');
-                startTaskTimer();
-            } else {
-                AppState.currentTimerValue = 0;
-                $('btnClaim').disabled = false;
-                navigateTo('task-viewer');
-                if (window.AndroidApp) window.AndroidApp.showCrossButton();
-            }
-        } catch(e) { console.log("Restore task error", e); }
-    } else {
-        var hasRef = prof && prof.referredBy;
-        var asked = prof && prof.referralAsked === true;
-        var pendingRef = getPendingRef();
-        if (!hasRef && !asked && !pendingRef) {
-          setTimeout(function () { showReferralPrompt(); }, 1200);
+          var snap = await db.ref('.info/serverTimeOffset').once('value');
+          offset = snap.val() || 0;
+        } catch (e) {}
+        AppState.serverTimeOffset = offset;
+        
+        var duration = AppState.settings.taskDuration || APP_CONST.taskDuration;
+        var currentServerTime = Date.now() + offset;
+        var elapsedSec = (currentServerTime - AppState.taskStartTime) / 1000;
+        var remaining = duration - Math.floor(elapsedSec);
+        
+        $('viewerTitle').textContent = AppState.currentTask.title || 'টাস্ক';
+        $('viewerDesc').textContent = AppState.currentTask.desc || '';
+        
+        if (remaining > 0) {
+          AppState.currentTimerValue = remaining;
+          $('btnClaim').disabled = true;
+          navigateTo('task-viewer');
+          startTaskTimer();
+        } else {
+          AppState.currentTimerValue = 0;
+          $('btnClaim').disabled = false;
+          navigateTo('task-viewer');
+          if (window.AndroidApp) window.AndroidApp.showCrossButton();
         }
+      } catch (e) { console.log("Restore task error", e); }
+    } else {
+      var hasRef = prof && prof.referredBy;
+      var asked = prof && prof.referralAsked === true;
+      var pendingRef = getPendingRef();
+      if (!hasRef && !asked && !pendingRef) {
+        setTimeout(function () { showReferralPrompt(); }, 1200);
+      }
     }
 
     checkVPN().then(function (vres) {
@@ -852,7 +864,8 @@ function initAuthListener() {
       }
     });
   });
-                                       }
+}
+
 /* ============================================================
    PROFILE LISTENER
    ============================================================ */
@@ -939,6 +952,7 @@ function attachTasksListener() {
   AppState.listeners.tasks = { ref: ref, event: 'value', cb: cb };
 }
 
+/* Feature 1: CPA Task Support in renderTasks */
 function renderTasks() {
   var list = $('tasksList');
   var tasks = AppState.tasks || {};
@@ -951,22 +965,34 @@ function renderTasks() {
 
   list.innerHTML = ids.map(function (id) {
     var t = tasks[id];
+    var isCpa = t.type === 'cpa';
+
+    var iconHtml = isCpa
+      ? '<div class="task-icon-wrap" style="background: rgba(147, 51, 234, 0.15); color: #9333ea;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="6"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/></svg></div>'
+      : '<div class="task-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>';
+
+    var rewardColor = isCpa ? ' style="color: #9333ea;"' : '';
+
     return '<div class="task-item" data-task-id="' + escapeHtml(id) + '">' +
-      '<div class="task-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>' +
+      iconHtml +
       '<div class="task-info">' +
         '<div class="task-title">' + escapeHtml(t.title || 'টাস্ক') + '</div>' +
         '<div class="task-desc">' + escapeHtml(t.desc || '') + '</div>' +
       '</div>' +
-      '<div class="task-reward">৳' + formatMoney(t.reward) + '</div>' +
+      '<div class="task-reward"' + rewardColor + '>৳' + formatMoney(t.reward) + '</div>' +
     '</div>';
   }).join('');
 
   list.querySelectorAll('.task-item').forEach(function (el) {
     el.addEventListener('click', function () { openTaskViewer(el.dataset.taskId); });
   });
-}
+                          }
 /* ============================================================
-   TASK VIEWER + TIMER (Server-Based Anti-Cheat)
+   Roile Earn9 — app.js (PART 4: Task Viewer, Timer & Claims)
+   ============================================================ */
+
+/* ============================================================
+   TASK VIEWER + TIMER (Feature 1 & Bug Fix 3)
    ============================================================ */
 async function openTaskViewer(taskId) {
   var t = AppState.tasks[taskId];
@@ -985,28 +1011,68 @@ async function openTaskViewer(taskId) {
     AppState.serverTimeOffset = 0;
   }
   
+  var taskType = t.type === 'cpa' ? 'cpa' : 'timer';
+
   AppState.taskStartTime = Date.now() + AppState.serverTimeOffset;
-  AppState.currentTask = { id: taskId, title: t.title, desc: t.desc, link: t.link, reward: t.reward };
+  AppState.currentTask = { 
+    id: taskId, 
+    title: t.title, 
+    desc: t.desc, 
+    link: t.link, 
+    reward: t.reward,
+    type: taskType
+  };
   AppState.linkOpened = false;
 
-  // ✅ টাস্ক এবং টাইমার ফোনের মেমোরিতে সেভ করে রাখা হচ্ছে
-  localStorage.setItem('activeTask', JSON.stringify(AppState.currentTask));
-  localStorage.setItem('activeTaskStartTime', AppState.taskStartTime);
-  
   $('viewerTitle').textContent = t.title || 'টাস্ক';
   $('viewerDesc').textContent = t.desc || '';
-  $('btnClaim').disabled = true;
+
+  // Feature 1: CPA Task Support in Viewer
+  var timerSvg = document.querySelector('.timer-svg') || ($('timerProgress') ? $('timerProgress').closest('svg') : null);
+  var timerNum = $('timerNumber');
+  var btnClaim = $('btnClaim');
+  var btnOpen = $('btnOpenLink');
+
+  if (taskType === 'cpa') {
+    if (timerSvg) timerSvg.style.display = 'none';
+    if (timerNum) timerNum.style.display = 'none';
+    if (btnClaim) btnClaim.style.display = 'none';
+    if (btnOpen) btnOpen.textContent = 'গেম/অ্যাপ ইনস্টল করুন';
+
+    localStorage.removeItem('activeTask');
+    localStorage.removeItem('activeTaskStartTime');
+    if (AppState.timerInterval) {
+      clearInterval(AppState.timerInterval);
+      AppState.timerInterval = null;
+    }
+  } else {
+    if (timerSvg) timerSvg.style.display = '';
+    if (timerNum) timerNum.style.display = '';
+    if (btnClaim) {
+      btnClaim.style.display = '';
+      btnClaim.disabled = true;
+    }
+    if (btnOpen) btnOpen.textContent = 'টাস্ক ওপেন করুন';
+
+    // টাস্ক এবং টাইমার ফোনের মেমোরিতে সেভ
+    localStorage.setItem('activeTask', JSON.stringify(AppState.currentTask));
+    localStorage.setItem('activeTaskStartTime', AppState.taskStartTime);
+
+    // Bug Fix 3: Reset Timer to prevent previous task's time bleed
+    AppState.currentTimerValue = AppState.settings.taskDuration || APP_CONST.taskDuration;
+    startTaskTimer();
+  }
+
   navigateTo('task-viewer');
-  startTaskTimer();
-       }
+}
+
 function startTaskTimer() {
   if (AppState.timerInterval) clearInterval(AppState.timerInterval);
 
   var duration = AppState.settings.taskDuration || APP_CONST.taskDuration;
   
-  // যদি রিলোড হওয়ার পর আগের টাইমার থেকে থাকে, তবে সেটাই ব্যবহার করবে
   if (!AppState.currentTimerValue || AppState.currentTimerValue === duration) {
-      AppState.currentTimerValue = duration;
+    AppState.currentTimerValue = duration;
   }
   
   var startClientTime = Date.now();
@@ -1014,48 +1080,49 @@ function startTaskTimer() {
   var circle = $('timerProgress');
   var number = $('timerNumber');
   var circumference = 2 * Math.PI * 52;
-  circle.style.strokeDasharray = circumference;
-  circle.style.strokeDashoffset = 0;
-  number.textContent = AppState.currentTimerValue;
+  if (circle) {
+    circle.style.strokeDasharray = circumference;
+    circle.style.strokeDashoffset = 0;
+  }
+  if (number) number.textContent = AppState.currentTimerValue;
 
   AppState.timerInterval = setInterval(function () {
     var elapsed = Math.floor((Date.now() - startClientTime) / 1000);
     var remaining = AppState.currentTimerValue - elapsed;
     
     var val = remaining > 0 ? remaining : 0;
-    number.textContent = val;
+    if (number) number.textContent = val;
     var progress = (AppState.currentTimerValue - val) / AppState.currentTimerValue;
-    circle.style.strokeDashoffset = circumference * Math.min(1, Math.max(0, progress));
+    if (circle) circle.style.strokeDashoffset = circumference * Math.min(1, Math.max(0, progress));
 
-    if (val <= 5) circle.style.stroke = '#ef4444';
-    else if (val <= 15) circle.style.stroke = '#f59e0b';
-    else circle.style.stroke = '#22c55e';
+    if (circle) {
+      if (val <= 5) circle.style.stroke = '#ef4444';
+      else if (val <= 15) circle.style.stroke = '#f59e0b';
+      else circle.style.stroke = '#22c55e';
+    }
 
     if (val <= 0) {
       clearInterval(AppState.timerInterval);
       AppState.timerInterval = null;
-      $('btnClaim').disabled = false;
+      var btn = $('btnClaim');
+      if (btn) btn.disabled = false;
       
       if (window.AndroidApp) {
-          window.AndroidApp.showCrossButton();
+        window.AndroidApp.showCrossButton();
       }
       
       showToast('টাইমার শেষ! এখন রিওয়ার্ড ক্লেইম করুন।', 'success');
     }
   }, 1000);
-     }
+}
+
 /* ============================================================
-   CLAIM REWARD (Server-Based Verification)
+   CLAIM REWARD (Bug Fix 6: Removed linkOpened check)
    ============================================================ */
 async function handleClaimReward() {
   var btn = $('btnClaim');
   if (btn.disabled) return;
   if (!AppState.currentTask || !AppState.user || !AppState.profile) return;
-
-  if (!AppState.linkOpened) {
-    showToast('প্রথমে "টাস্ক ওপেন করুন" বাটনে ক্লিক করুন।', 'warning');
-    return;
-  }
 
   var duration = Number(AppState.settings.taskDuration) || APP_CONST.taskDuration;
   var currentServerTime = Date.now() + (AppState.serverTimeOffset || 0);
@@ -1099,10 +1166,9 @@ async function handleClaimReward() {
     showToast('৳' + formatMoney(reward) + ' আয় হয়েছে!', 'success');
     
     if (window.AndroidApp) {
-        window.AndroidApp.hideCrossButton();
+      window.AndroidApp.hideCrossButton();
     }
     
-    // ✅ ক্লেইম শেষে ফোনের মেমোরি ক্লিয়ার করা হচ্ছে
     localStorage.removeItem('activeTask');
     localStorage.removeItem('activeTaskStartTime');
     
@@ -1117,7 +1183,11 @@ async function handleClaimReward() {
   } finally {
     btn.textContent = 'রিওয়ার্ড ক্লেইম করুন';
   }
-       }
+  }
+/* ============================================================
+   Roile Earn9 — app.js (PART 5: Cooldown, Withdrawals & History)
+   ============================================================ */
+
 /* ============================================================
    COOLDOWN
    ============================================================ */
@@ -1129,7 +1199,7 @@ function getCooldownKey() {
 function setCooldown(seconds) {
   var until = Date.now() + (seconds * 1000);
   if (AppState.user) {
-    db.ref('users/' + AppState.user.uid + '/cooldownUntil').set(until).catch(function(){});
+    db.ref('users/' + AppState.user.uid + '/cooldownUntil').set(until).catch(function () {});
   }
   try { localStorage.setItem(getCooldownKey(), String(until)); } catch (e) {}
 }
@@ -1196,7 +1266,8 @@ async function autoAssignModerator() {
     console.error('[autoAssignModerator]', err);
     return null;
   }
-             }
+}
+
 /* ============================================================
    WITHDRAW
    ============================================================ */
@@ -1218,9 +1289,7 @@ async function handleWithdraw() {
 
   var requiredRefs = AppState.settings.requiredReferrals || 0;
   var have = AppState.profile.referralCount || 0;
-  var unlocked = AppState.profile.referralUnlocked ||
-                 requiredRefs === 0 ||
-                 (requiredRefs > 0 && have >= requiredRefs);
+  var unlocked = (requiredRefs === 0) || (have >= requiredRefs);
 
   if (!unlocked) {
     return showError('wdMessage', 'Withdraw এর জন্য ' + requiredRefs + ' জনকে রেফার করতে হবে। আপনি করেছেন: ' + have + '/' + requiredRefs);
@@ -1360,7 +1429,10 @@ function renderHistory() {
       '</div>';
     }).join('');
   }
-}
+                    }
+/* ============================================================
+   Roile Earn9 — app.js (PART 6: Mod Panel, Events & Bootstrap)
+   ============================================================ */
 
 /* ============================================================
    MOD PANEL
@@ -1513,28 +1585,6 @@ async function handleModReject(wdId) {
    ============================================================ */
 function injectGoogleButtons() {
   return;
-  var googleSvg = '<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">' +
-    '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>' +
-    '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>' +
-    '<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>' +
-    '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>' +
-    '</svg>';
-
-  var loginDivider = document.querySelector('#screen-login .divider');
-  if (loginDivider && !document.getElementById('btnGoogleLogin')) {
-    var wrap = document.createElement('div');
-    wrap.className = 'google-wrap';
-    wrap.innerHTML = '<button id="btnGoogleLogin" class="btn-google">' + googleSvg + '<span>গুগল দিয়ে লগইন</span></button>';
-    loginDivider.parentNode.insertBefore(wrap, loginDivider.nextSibling);
-  }
-
-  var regDivider = document.querySelector('#screen-register .divider');
-  if (regDivider && !document.getElementById('btnGoogleRegister')) {
-    var wrap2 = document.createElement('div');
-    wrap2.className = 'google-wrap';
-    wrap2.innerHTML = '<button id="btnGoogleRegister" class="btn-google">' + googleSvg + '<span>গুগল দিয়ে রেজিস্টার</span></button>';
-    regDivider.parentNode.insertBefore(wrap2, regDivider.nextSibling);
-  }
 }
 
 /* ============================================================
@@ -1584,25 +1634,40 @@ function bindEvents() {
     });
   });
 
+  // Bug Fix 2: Back Button Memory Leak Fix
   $('btnBackFromTask').addEventListener('click', function () {
     if (AppState.timerInterval) { clearInterval(AppState.timerInterval); AppState.timerInterval = null; }
+    localStorage.removeItem('activeTask');
+    localStorage.removeItem('activeTaskStartTime');
     AppState.currentTask = null;
     AppState.taskStartTime = null;
     navigateTo('tasks');
   });
 
+  // Feature 1: SubID/UID Replacement on Open Link
   $('btnOpenLink').addEventListener('click', function () {
     if (!AppState.currentTask || !AppState.currentTask.link) return showToast('লিংক পাওয়া যায়নি', 'error');
     AppState.linkOpened = true;
-    window.open(AppState.currentTask.link, '_blank', 'noopener,noreferrer');
+    
+    var url = AppState.currentTask.link;
+    if (AppState.currentTask.type === 'cpa' && AppState.user) {
+      var uid = AppState.user.uid;
+      if (url.indexOf('{uid}') !== -1) {
+        url = url.replace(/\{uid\}/g, encodeURIComponent(uid));
+      } else {
+        var separator = url.indexOf('?') !== -1 ? '&' : '?';
+        url = url + separator + 'subid=' + encodeURIComponent(uid);
+      }
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
   });
 
   $('btnClaim').addEventListener('click', handleClaimReward);
 
-  // Auto-Claim on Return from Browser
+  // Feature 1: Visibility Auto-claim restricted strictly to 'timer' tasks
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && document.visibilityState === 'visible') {
-      if (AppState.currentTask && AppState.linkOpened) {
+      if (AppState.currentTask && AppState.currentTask.type === 'timer' && AppState.linkOpened) {
         var duration = Number(AppState.settings.taskDuration) || APP_CONST.taskDuration;
         var currentServerTime = Date.now() + (AppState.serverTimeOffset || 0);
         var elapsedSec = (currentServerTime - (AppState.taskStartTime || 0)) / 1000;
@@ -1675,7 +1740,7 @@ function bindEvents() {
 }
 
 /* ============================================================
-   GLOBAL ERROR HANDLERS
+   GLOBAL ERROR HANDLERS & NATIVE BRIDGE
    ============================================================ */
 window.addEventListener('error', function (e) {
   console.error('[GlobalError]', e.message, e.filename, e.lineno);
@@ -1684,8 +1749,29 @@ window.addEventListener('unhandledrejection', function (e) {
   console.error('[UnhandledPromise]', e.reason);
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+  var closeBtn = document.getElementById('btnCloseTaskViewer');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      if (AppState.timerInterval) { 
+        clearInterval(AppState.timerInterval); 
+        AppState.timerInterval = null; 
+      }
+      localStorage.removeItem('activeTask');
+      localStorage.removeItem('activeTaskStartTime');
+      AppState.currentTask = null;
+      AppState.taskStartTime = null;
+      
+      if (window.AndroidApp) {
+        window.AndroidApp.hideCrossButton();
+      }
+      navigateTo('tasks');
+    });
+  }
+});
+
 /* ============================================================
-   BOOTSTRAP
+   BOOTSTRAP (Must be at the very bottom)
    ============================================================ */
 (function bootstrap() {
   getOrCreateDeviceId();
@@ -1701,7 +1787,6 @@ window.addEventListener('unhandledrejection', function (e) {
   });
 
   setTimeout(function () {
-
     if (!auth || !db) {
       console.error('[Bootstrap] Firebase not ready');
       showError('loginError', 'Firebase লোড হয়নি। ইন্টারনেট চেক করে রিফ্রেশ দিন।');
@@ -1721,24 +1806,3 @@ window.addEventListener('unhandledrejection', function (e) {
     }, 20000);
   }, APP_CONST.splash);
 })();
-// ✅ ক্রস (X) বাটনের কাজ (নেটিভ বাটন হাইড করার জন্য)
-document.addEventListener('DOMContentLoaded', function() {
-  var closeBtn = document.getElementById('btnCloseTaskViewer');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', function() {
-      if (AppState.timerInterval) { 
-          clearInterval(AppState.timerInterval); 
-          AppState.timerInterval = null; 
-      }
-      AppState.currentTask = null;
-      AppState.taskStartTime = null;
-      
-      // নেটিভ ক্রস বাটন হাইড করা
-      if (window.AndroidApp) {
-          window.AndroidApp.hideCrossButton();
-      }
-      
-      navigateTo('tasks');
-    });
-  }
-});
