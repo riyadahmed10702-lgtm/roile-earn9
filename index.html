@@ -3,117 +3,201 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Roile Earn9</title>
+  <title data-i18n="app_title">Rx Earn9 - Galaxy Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0a0f1e">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
-</script>
+  <meta name="theme-color" content="#030712">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
 </head>
-<body>
+<body class="galaxy-theme">
 
-  <!-- Firebase Compat CDN v9.23.0 (আপনার কনফিগ অনুযায়ী) -->
+  <!-- Ambient Space / Cosmic Background Decor -->
+  <div class="cosmic-background" aria-hidden="true">
+    <div class="nebula-orb nebula-cyan"></div>
+    <div class="nebula-orb nebula-gold"></div>
+    <div class="nebula-orb nebula-purple"></div>
+    <div class="stars-layer"></div>
+  </div>
+
+  <!-- Firebase Compat CDN v9.23.0 -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <!-- ========== SPLASH SCREEN ========== -->
   <div id="screen-splash" class="screen active">
-    <div class="splash-content">
-      <div class="splash-logo">R</div>
-      <h1 class="splash-title">Roile Earn9</h1>
-      <p class="splash-tagline">টাস্ক সম্পন্ন করুন, আয় শুরু করুন</p>
+    <!-- Language Toggle Top Right -->
+    <div class="splash-top-bar">
+      <div class="lang-toggle glass-card neon-border">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <span class="lang-divider">|</span>
+        <button class="lang-btn" data-lang="bn">BN</button>
+      </div>
+    </div>
+
+    <div class="splash-content glass-card neon-glow glowing-border">
+      <div class="splash-logo animated-orb cyan-glow">
+        <span>R</span>
+      </div>
+      <h1 class="splash-title glow-text-cyan" data-i18n="app_title">Rx Earn9</h1>
+      <p class="splash-tagline" data-i18n="splash_tagline">টাস্ক সম্পন্ন করুন, আয় শুরু করুন</p>
+      
       <div class="splash-loader">
-        <div class="loader-bar"></div>
+        <div class="loader-bar glowing-bar"></div>
       </div>
     </div>
   </div>
 
   <!-- ========== LOGIN SCREEN ========== -->
   <div id="screen-login" class="screen">
-    <div class="auth-container">
-      <div class="auth-header">
-        <div class="auth-logo">R</div>
-        <h2>লগইন করুন</h2>
-        <p>আপনার অ্যাকাউন্টে প্রবেশ করুন</p>
+    <!-- Screen Header with Language Toggle -->
+    <div class="screen-top-nav">
+      <div class="lang-toggle glass-card neon-border">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <span class="lang-divider">|</span>
+        <button class="lang-btn" data-lang="bn">BN</button>
       </div>
-      <div class="auth-card">
-        <div class="input-group">
-          <label>ইমেইল</label>
-          <input type="email" id="loginEmail" placeholder="example@gmail.com" autocomplete="email">
+    </div>
+
+    <div class="auth-container">
+      <!-- 3D Floating Coin Placeholder -->
+      <div class="floating-coin-container">
+        <div class="floating-3d-coin golden-glow animated-coin"></div>
+      </div>
+
+      <div class="auth-header">
+        <div class="auth-logo animated-orb cyan-glow">
+          <span>R</span>
         </div>
+        <h2 class="glow-text" data-i18n="login_title">লগইন করুন</h2>
+        <p data-i18n="login_subtitle">আপনার অ্যাকাউন্টে প্রবেশ করুন</p>
+      </div>
+
+      <div class="auth-card glass-card glowing-border neon-glow">
         <div class="input-group">
-          <label>পাসওয়ার্ড</label>
-          <input type="password" id="loginPassword" placeholder="আপনার পাসওয়ার্ড" autocomplete="current-password">
+          <label data-i18n="label_email">ইমেইল</label>
+          <div class="input-wrapper">
+            <input type="email" id="loginEmail" class="glass-input" placeholder="example@gmail.com" data-i18n-placeholder="placeholder_email" autocomplete="email">
+          </div>
         </div>
-        <div id="loginError" class="error-box hidden"></div>
-        <button id="btnLogin" class="btn btn-primary btn-block">লগইন</button>
-        <div class="divider"><span>অথবা</span></div>
-        <!-- Google button will be injected by app.js -->
-        <p class="auth-switch">অ্যাকাউন্ট নেই? <a href="#" id="linkToRegister">রেজিস্টার করুন</a></p>
+
+        <div class="input-group">
+          <label data-i18n="label_password">পাসওয়ার্ড</label>
+          <div class="input-wrapper">
+            <input type="password" id="loginPassword" class="glass-input" placeholder="আপনার পাসওয়ার্ড" data-i18n-placeholder="placeholder_password" autocomplete="current-password">
+          </div>
+        </div>
+
+        <div id="loginError" class="error-box glass-card hidden"></div>
+
+        <button id="btnLogin" class="btn btn-primary btn-block glass-button neon-glow cyan-border" data-i18n="btn_login">
+          <span data-i18n="btn_login">লগইন</span>
+        </button>
+
+        <p class="auth-switch">
+          <span data-i18n="no_account">অ্যাকাউন্ট নেই?</span> 
+          <a href="#" id="linkToRegister" class="text-cyan glow-link" data-i18n="link_register">রেজিস্টার করুন</a>
+        </p>
       </div>
     </div>
   </div>
 
   <!-- ========== REGISTER SCREEN ========== -->
   <div id="screen-register" class="screen">
+    <!-- Screen Header with Language Toggle -->
+    <div class="screen-top-nav">
+      <div class="lang-toggle glass-card neon-border">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <span class="lang-divider">|</span>
+        <button class="lang-btn" data-lang="bn">BN</button>
+      </div>
+    </div>
+
     <div class="auth-container">
       <div class="auth-header">
-        <div class="auth-logo">R</div>
-        <h2>রেজিস্টার করুন</h2>
-        <p>নতুন অ্যাকাউন্ট তৈরি করুন</p>
+        <div class="auth-logo animated-orb cyan-glow">
+          <span>R</span>
+        </div>
+        <h2 class="glow-text" data-i18n="register_title">রেজিস্টার করুন</h2>
+        <p data-i18n="register_subtitle">নতুন অ্যাকাউন্ট তৈরি করুন</p>
       </div>
-      <div class="auth-card">
+
+      <div class="auth-card glass-card glowing-border neon-glow">
         <div class="input-group">
-          <label>পূর্ণ নাম</label>
-          <input type="text" id="regName" placeholder="আপনার নাম" autocomplete="name">
+          <label data-i18n="label_fullname">পূর্ণ নাম</label>
+          <input type="text" id="regName" class="glass-input" placeholder="আপনার নাম" data-i18n-placeholder="placeholder_name" autocomplete="name">
         </div>
+
         <div class="input-group">
-          <label>ইমেইল</label>
-          <input type="email" id="regEmail" placeholder="example@gmail.com" autocomplete="email">
+          <label data-i18n="label_email">ইমেইল</label>
+          <input type="email" id="regEmail" class="glass-input" placeholder="example@gmail.com" data-i18n-placeholder="placeholder_email" autocomplete="email">
         </div>
+
         <div class="input-group">
-          <label>মোবাইল নম্বর</label>
-          <input type="tel" id="regPhone" placeholder="01XXXXXXXXX" autocomplete="tel">
+          <label data-i18n="label_phone">মোবাইল নম্বর</label>
+          <input type="tel" id="regPhone" class="glass-input" placeholder="01XXXXXXXXX" data-i18n-placeholder="placeholder_phone" autocomplete="tel">
         </div>
+
         <div class="input-group">
-          <label>পাসওয়ার্ড</label>
-          <input type="password" id="regPassword" placeholder="কমপক্ষে ৬ অক্ষর" autocomplete="new-password">
+          <label data-i18n="label_password">পাসওয়ার্ড</label>
+          <input type="password" id="regPassword" class="glass-input" placeholder="কমপক্ষে ৬ অক্ষর" data-i18n-placeholder="placeholder_password_min" autocomplete="new-password">
         </div>
-        <div id="regError" class="error-box hidden"></div><div class="input-group">
-  <label>রেফারেল কোড (ঐচ্ছিক)</label>
-  <input type="text" id="regReferralCode" placeholder="কারো কোড থাকলে দিন" autocomplete="off">
-                                                            </div>
-        <button id="btnRegister" class="btn btn-primary btn-block">রেজিস্টার</button>
-        <div class="divider"><span>অথবা</span></div>
-        <!-- Google button will be injected by app.js -->
-        <p class="auth-switch">অ্যাকাউন্ট আছে? <a href="#" id="linkToLogin">লগইন করুন</a></p>
+
+        <div class="input-group">
+          <label data-i18n="label_ref_code_optional">রেফারেল কোড (ঐচ্ছিক)</label>
+          <input type="text" id="regReferralCode" class="glass-input" placeholder="কারো কোড থাকলে দিন" data-i18n-placeholder="placeholder_ref_input" autocomplete="off">
+        </div>
+
+        <div id="regError" class="error-box glass-card hidden"></div>
+
+        <button id="btnRegister" class="btn btn-primary btn-block glass-button neon-glow cyan-border" data-i18n="btn_register">
+          <span data-i18n="btn_register">রেজিস্টার</span>
+        </button>
+
+        <p class="auth-switch">
+          <span data-i18n="already_account">অ্যাকাউন্ট আছে?</span> 
+          <a href="#" id="linkToLogin" class="text-cyan glow-link" data-i18n="link_login">লগইন করুন</a>
+        </p>
       </div>
     </div>
   </div>
 
-  <!-- Part 2 এখানে যুক্ত হবে (মেইন অ্যাপ, ড্যাশবোর্ড, টাস্ক, উইথড্র, হিস্ট্রি, বটম নেভigation) -->
   <!-- ========== MAIN APP WRAPPER ========== -->
   <div id="screen-app" class="screen">
 
-    <!-- HEADER -->
-    <header class="app-header">
+    <!-- APP HEADER -->
+    <header class="app-header glass-card">
       <div class="header-left">
-        <div class="header-logo">R</div>
+        <div class="header-logo animated-orb cyan-glow">R</div>
         <div class="header-info">
-          <h3 class="header-name" id="headerName">ব্যবহারকারী</h3>
-          <span class="header-status" id="headerStatus">সক্রিয়</span>
+          <h3 class="header-name glow-text" id="headerName" data-i18n="default_username">ব্যবহারকারী</h3>
+          <span class="header-status badge-active" id="headerStatus" data-i18n="status_active">সক্রিয়</span>
         </div>
       </div>
-      <button id="btnLogout" class="btn-icon" title="লগআউট">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      </button>
+
+      <div class="header-actions">
+        <!-- Bilingual Language Toggle in Main Header -->
+        <div class="lang-toggle header-lang glass-card neon-border">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <span class="lang-divider">|</span>
+          <button class="lang-btn" data-lang="bn">BN</button>
+        </div>
+
+        <button id="btnLogout" class="btn-icon glass-button cyan-border" title="লগআউট" aria-label="লগআউট">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <!-- CONTENT AREA -->
@@ -121,179 +205,247 @@
 
       <!-- ===== DASHBOARD PAGE ===== -->
       <section id="page-dashboard" class="page active">
-        <!-- Balance Card -->
-        <div class="balance-card">
+
+        <!-- Galaxy Balance Card -->
+        <div class="balance-card glass-card golden-glow glowing-border">
           <div class="balance-glow"></div>
+          
           <div class="balance-header">
-            <span class="balance-label">বর্তমান ব্যালেন্স</span>
-            <span class="balance-badge">
-              <span class="live-dot"></span> লাইভ
+            <span class="balance-label" data-i18n="label_balance">বর্তমান ব্যালেন্স</span>
+            <span class="balance-badge glass-badge neon-border">
+              <span class="live-dot pulse-animation"></span> 
+              <span data-i18n="badge_live">লাইভ</span>
             </span>
           </div>
-          <div class="balance-amount">
+
+          <div class="balance-amount glow-text-gold">
             <span class="currency">৳</span><span id="dashBalance">0.00</span>
           </div>
-          <div class="balance-stats">
+
+          <!-- 3D Floating Coin Display Placeholder -->
+          <div class="dashboard-coin-holder">
+            <div class="floating-3d-coin golden-glow animated-coin"></div>
+          </div>
+
+          <div class="balance-stats glass-card-nested">
             <div class="stat-item">
-              <span class="stat-label">মোট আয়</span>
-              <span class="stat-value" id="dashTotalEarned">৳0.00</span>
+              <span class="stat-label" data-i18n="label_total_earned">মোট আয়</span>
+              <span class="stat-value text-cyan" id="dashTotalEarned">৳0.00</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
-              <span class="stat-label">মোট উইথড্র</span>
-              <span class="stat-value" id="dashTotalWithdrawn">৳0.00</span>
+              <span class="stat-label" data-i18n="label_total_withdrawn">মোট উইথড্র</span>
+              <span class="stat-value text-gold" id="dashTotalWithdrawn">৳0.00</span>
             </div>
           </div>
         </div>
 
-        <!-- User Info Card -->
-        <div class="info-card">
+        <!-- User Info Glass Card -->
+        <div class="info-card glass-card neon-border">
           <div class="info-row">
-            <div class="info-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <div class="info-icon animated-orb cyan-glow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
             </div>
             <div class="info-text">
-              <span class="info-label">ইমেইল</span>
+              <span class="info-label" data-i18n="label_email">ইমেইল</span>
               <span class="info-value" id="dashEmail">-</span>
             </div>
           </div>
+
           <div class="info-row">
-            <div class="info-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <div class="info-icon animated-orb cyan-glow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
             </div>
             <div class="info-text">
-              <span class="info-label">মোবাইল</span>
+              <span class="info-label" data-i18n="label_phone">মোবাইল</span>
               <span class="info-value" id="dashPhone">-</span>
             </div>
           </div>
+
           <div class="info-row">
-            <div class="info-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <div class="info-icon animated-orb cyan-glow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+              </svg>
             </div>
             <div class="info-text">
-              <span class="info-label">ভূমিকা</span>
-              <span class="info-value" id="dashRole">ব্যবহারকারী</span>
+              <span class="info-label" data-i18n="label_role">ভূমিকা</span>
+              <span class="info-value" id="dashRole" data-i18n="role_user">ব্যবহারকারী</span>
             </div>
           </div>
         </div>
 
-        <!-- Notice Board -->
-        <div class="notice-card">
+        <!-- Galaxy Notice Board -->
+        <div class="notice-card glass-card neon-glow">
           <div class="notice-head">
-            <div class="notice-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+            <div class="notice-icon animated-orb cyan-glow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 11l19-9-9 19-2-8-8-2z"/>
+              </svg>
             </div>
-            <h4>নোটিশ বোর্ড</h4>
+            <h4 class="glow-text" data-i18n="title_notice">নোটিশ বোর্ড</h4>
           </div>
-          <p id="dashNotice" class="notice-text">লোড হচ্ছে...</p>
+          <p id="dashNotice" class="notice-text" data-i18n="notice_loading">লোড হচ্ছে...</p>
         </div>
-<!-- Referral Card -->
-<div class="referral-card">
-  <div class="referral-head">
-    <div class="referral-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-    </div>
-    <div>
-      <h4>Referral Program</h4>
-      <p id="refSubtitle" class="ref-subtitle">বন্ধুদের আমন্ত্রণ জানান</p>
-    </div>
-  </div>
 
-  <div class="referral-code-box">
-    <span id="refCode">LOADING...</span>
-  </div>
+        <!-- Cosmic Referral Card -->
+        <div class="referral-card glass-card golden-glow glowing-border">
+          <div class="referral-head">
+            <div class="referral-icon animated-orb gold-glow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 12v10H4V12"/>
+                <path d="M2 7h20v5H2z"/>
+                <path d="M12 22V7"/>
+                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+              </svg>
+            </div>
+            <div>
+              <h4 class="glow-text-gold" data-i18n="title_referral">Referral Program</h4>
+              <p id="refSubtitle" class="ref-subtitle" data-i18n="subtitle_referral">বন্ধুদের আমন্ত্রণ জানান</p>
+            </div>
+          </div>
 
-  <div class="referral-stats">
-    <div class="ref-stat">
-      <span class="ref-stat-label">রেফার হয়েছে</span>
-      <span class="ref-stat-value"><span id="refCount">0</span> জন</span>
-    </div>
-    <div class="ref-stat">
-      <span class="ref-stat-label">স্ট্যাটাস</span>
-      <span id="refStatus" class="ref-status locked">🔒 Locked</span>
-    </div>
-  </div>
+          <div class="referral-code-box glass-card neon-border">
+            <span id="refCode" class="glow-text-cyan">LOADING...</span>
+          </div>
 
-  <div class="referral-actions">
-    <button id="btnCopyRef" class="btn btn-info">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      কপি
-    </button>
-    <button id="btnShareRef" class="btn btn-primary">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-      শেয়ার
-    </button>
-  </div>
-  </div>
-                                                                                                           
-        <!-- Quick Actions -->
+          <div class="referral-stats">
+            <div class="ref-stat glass-card-nested">
+              <span class="ref-stat-label" data-i18n="label_referred">রেফার হয়েছে</span>
+              <span class="ref-stat-value"><span id="refCount">0</span> <span data-i18n="unit_people">জন</span></span>
+            </div>
+            <div class="ref-stat glass-card-nested">
+              <span class="ref-stat-label" data-i18n="label_ref_status">স্ট্যাটাস</span>
+              <span id="refStatus" class="ref-status locked glass-badge" data-i18n="status_locked">🔒 Locked</span>
+            </div>
+          </div>
+
+          <div class="referral-actions">
+            <button id="btnCopyRef" class="btn btn-info glass-button cyan-border">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <span data-i18n="btn_copy">কপি</span>
+            </button>
+            <button id="btnShareRef" class="btn btn-primary glass-button golden-glow gold-border">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <circle cx="18" cy="5" r="3"/>
+                <circle cx="6" cy="12" r="3"/>
+                <circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              <span data-i18n="btn_share">শেয়ার</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Cosmic Actions -->
         <div class="quick-actions">
-          <button class="quick-btn" data-nav="tasks">
-            <div class="quick-icon quick-icon-green">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <button class="quick-btn glass-button cyan-border neon-glow" data-nav="tasks">
+            <div class="quick-icon animated-orb cyan-glow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
             </div>
-            <span>টাস্ক শুরু</span>
+            <span data-i18n="nav_tasks">টাস্ক শুরু</span>
           </button>
-          <button class="quick-btn" data-nav="withdraw">
-            <div class="quick-icon quick-icon-blue">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+
+          <button class="quick-btn glass-button gold-border golden-glow" data-nav="withdraw">
+            <div class="quick-icon animated-orb gold-glow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="19" x2="12" y2="5"/>
+                <polyline points="5 12 12 5 19 12"/>
+              </svg>
             </div>
-            <span>উইথড্র</span>
+            <span data-i18n="nav_withdraw">উইথড্র</span>
           </button>
-          <button class="quick-btn" data-nav="history">
-            <div class="quick-icon quick-icon-amber">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+
+          <button class="quick-btn glass-button neon-border purple-glow" data-nav="history">
+            <div class="quick-icon animated-orb purple-glow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
             </div>
-            <span>হিস্ট্রি</span>
+            <span data-i18n="nav_history">হিস্ট্রি</span>
           </button>
         </div>
       </section>
-
-      <!-- ===== TASKS PAGE ===== -->
+            <!-- ===== TASKS PAGE ===== -->
       <section id="page-tasks" class="page">
         <div class="page-head">
-          <h2>উপলব্ধ টাস্ক</h2>
-          <p>টাস্ক সম্পন্ন করে রিওয়ার্ড পান</p>
+          <h2 class="glow-text-cyan" data-i18n="tasks_page_title">উপলব্ধ টাস্ক</h2>
+          <p data-i18n="tasks_page_subtitle">টাস্ক সম্পন্ন করে রিওয়ার্ড পান</p>
         </div>
+
         <div id="tasksList" class="tasks-list">
-          <div class="empty-state">
-            <div class="empty-spinner"></div>
-            <p>টাস্ক লোড হচ্ছে...</p>
+          <div class="empty-state glass-card neon-border">
+            <div class="empty-spinner animated-orb cyan-glow"></div>
+            <p data-i18n="tasks_loading">টাস্ক লোড হচ্ছে...</p>
           </div>
         </div>
       </section>
 
       <!-- ===== TASK VIEWER PAGE ===== -->
       <section id="page-task-viewer" class="page">
-         <div class="page-head">
-          <button id="btnBackFromTask" class="btn-back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-            ফিরে যান
-          </button>
-        </div>
-        <div class="task-viewer-card">
-          <h3 id="viewerTitle" class="viewer-title">টাস্ক</h3>
-          <p id="viewerDesc" class="viewer-desc">বিবরণ</p>
-
-          <div class="timer-wrap">
-            <svg class="timer-svg" viewBox="0 0 120 120">
-              <circle class="timer-track" cx="60" cy="60" r="52"/>
-              <circle class="timer-progress" id="timerProgress" cx="60" cy="60" r="52"/>
+        <div class="page-head viewer-header">
+          <button id="btnBackFromTask" class="btn-back glass-button cyan-border">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
             </svg>
-            <div class="timer-text">
-              <span id="timerNumber">30</span>
-              <small>সেকেন্ড</small>
+            <span data-i18n="btn_back">ফিরে যান</span>
+          </button>
+
+          <!-- Native Android Cross Button Placeholder -->
+          <div id="nativeCrossBtnPlaceholder" class="native-cross-btn-placeholder"></div>
+        </div>
+
+        <div class="task-viewer-card glass-card golden-glow glowing-border">
+          <div class="viewer-head-area">
+            <h3 id="viewerTitle" class="viewer-title glow-text" data-i18n="viewer_title">টাস্ক</h3>
+            <p id="viewerDesc" class="viewer-desc" data-i18n="viewer_desc">বিবরণ</p>
+          </div>
+
+          <!-- Isolated Timer Container for standard & CPA tasks -->
+          <div class="timer-section-wrapper" id="viewerTimerWrapper">
+            <div class="timer-wrap animated-orb cyan-glow">
+              <svg class="timer-svg" viewBox="0 0 120 120">
+                <circle class="timer-track" cx="60" cy="60" r="52"/>
+                <circle class="timer-progress" id="timerProgress" cx="60" cy="60" r="52"/>
+              </svg>
+              <div class="timer-text">
+                <span id="timerNumber" class="glow-text">30</span>
+                <small data-i18n="timer_seconds">সেকেন্ড</small>
+              </div>
             </div>
           </div>
 
           <div class="viewer-actions">
-            <button id="btnOpenLink" class="btn btn-info btn-block">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              টাস্ক ওপেন করুন
+            <button id="btnOpenLink" class="btn btn-info btn-block glass-button neon-glow cyan-border">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              <span data-i18n="btn_open_task">টাস্ক ওপেন করুন</span>
             </button>
-            <button id="btnClaim" class="btn btn-primary btn-block" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20 6L9 17l-5-5"/></svg>
-              রিওয়ার্ড ক্লেইম করুন
+
+            <button id="btnClaim" class="btn btn-primary btn-block glass-button golden-glow glowing-border gold-border" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+              <span data-i18n="btn_claim_reward">রিওয়ার্ড ক্লেইম করুন</span>
             </button>
           </div>
         </div>
@@ -302,43 +454,48 @@
       <!-- ===== WITHDRAW PAGE ===== -->
       <section id="page-withdraw" class="page">
         <div class="page-head">
-          <h2>উইথড্র রিকোয়েস্ট</h2>
-          <p>নূন্যতম ৳50 উত্তোলন করা যাবে</p>
+          <h2 class="glow-text-gold" data-i18n="withdraw_title">উইথড্র রিকোয়েস্ট</h2>
+          <p data-i18n="withdraw_subtitle">নূন্যতম ৳50 উত্তোলন করা যাবে</p>
         </div>
 
-        <div class="withdraw-card">
-          <div class="withdraw-balance">
-            <span>উপলব্ধ ব্যালেন্স</span>
-            <strong>৳<span id="wdBalance">0.00</span></strong>
+        <div class="withdraw-card glass-card golden-glow glowing-border">
+          <div class="withdraw-balance glass-card-nested">
+            <span data-i18n="label_avail_balance">উপলব্ধ ব্যালেন্স</span>
+            <strong class="glow-text-gold">৳<span id="wdBalance">0.00</span></strong>
           </div>
 
           <div class="input-group">
-            <label>পেমেন্ট মেথড</label>
+            <label data-i18n="label_payment_method">পেমেন্ট মেথড</label>
             <div class="method-select">
-              <button class="method-btn active" data-method="bkash">
-                <span class="method-dot" style="background:#e2136e"></span> বিকাশ
+              <button class="method-btn glass-button active" data-method="bkash">
+                <span class="method-dot" style="background:#e2136e"></span> 
+                <span data-i18n="method_bkash">বিকাশ</span>
               </button>
-              <button class="method-btn" data-method="nagad">
-                <span class="method-dot" style="background:#f47b20"></span> নগদ
+              <button class="method-btn glass-button" data-method="nagad">
+                <span class="method-dot" style="background:#f47b20"></span> 
+                <span data-i18n="method_nagad">নগদ</span>
               </button>
             </div>
           </div>
 
           <div class="input-group">
-            <label>মোবাইল নম্বর</label>
-            <input type="tel" id="wdNumber" placeholder="01XXXXXXXXX">
+            <label data-i18n="label_account_number">মোবাইল নম্বর</label>
+            <input type="tel" id="wdNumber" class="glass-input" placeholder="01XXXXXXXXX" data-i18n-placeholder="placeholder_phone">
           </div>
 
           <div class="input-group">
-            <label>পরিমাণ (৳)</label>
-            <input type="number" id="wdAmount" placeholder="50" min="50">
+            <label data-i18n="label_withdraw_amount">পরিমাণ (৳)</label>
+            <input type="number" id="wdAmount" class="glass-input" placeholder="50" min="50" data-i18n-placeholder="placeholder_amount">
           </div>
 
-          <div id="wdMessage" class="error-box hidden"></div>
+          <div id="wdMessage" class="error-box glass-card hidden"></div>
 
-          <button id="btnWithdraw" class="btn btn-primary btn-block">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-            রিকোয়েস্ট পাঠান
+          <button id="btnWithdraw" class="btn btn-primary btn-block glass-button golden-glow gold-border">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <line x1="12" y1="19" x2="12" y2="5"/>
+              <polyline points="5 12 12 5 19 12"/>
+            </svg>
+            <span data-i18n="btn_submit_withdraw">রিকোয়েস্ট পাঠান</span>
           </button>
         </div>
       </section>
@@ -346,18 +503,18 @@
       <!-- ===== HISTORY PAGE ===== -->
       <section id="page-history" class="page">
         <div class="page-head">
-          <h2>লেনদেনের ইতিহাস</h2>
-          <p>আপনার সব আয় ও উইথড্র</p>
+          <h2 class="glow-text" data-i18n="history_title">লেনদেনের ইতিহাস</h2>
+          <p data-i18n="history_subtitle">আপনার সব আয় ও উইথড্র</p>
         </div>
 
-        <div class="history-tabs">
-          <button class="history-tab active" data-tab="earnings">আয়</button>
-          <button class="history-tab" data-tab="withdrawals">উইথড্র</button>
+        <div class="history-tabs glass-card">
+          <button class="history-tab glass-button active" data-tab="earnings" data-i18n="tab_earnings">আয়</button>
+          <button class="history-tab glass-button" data-tab="withdrawals" data-i18n="tab_withdrawals">উইথড্র</button>
         </div>
 
         <div id="historyList" class="history-list">
-          <div class="empty-state">
-            <p>কোনো তথ্য নেই</p>
+          <div class="empty-state glass-card neon-border">
+            <p data-i18n="empty_history">কোনো তথ্য নেই</p>
           </div>
         </div>
       </section>
@@ -365,12 +522,13 @@
       <!-- ===== MOD PANEL PAGE (moderators only) ===== -->
       <section id="page-mod-panel" class="page">
         <div class="page-head">
-          <h2>মডারেটর প্যানেল</h2>
-          <p>আপনার কাছে assigned উইথড্র রিকোয়েস্ট</p>
+          <h2 class="glow-text-cyan" data-i18n="mod_title">মডারেটর প্যানেল</h2>
+          <p data-i18n="mod_subtitle">আপনার কাছে assigned উইথড্র রিকোয়েস্ট</p>
         </div>
+        
         <div id="modList" class="mod-list">
-          <div class="empty-state">
-            <p>কোনো রিকোয়েস্ট নেই</p>
+          <div class="empty-state glass-card neon-border">
+            <p data-i18n="empty_mod_requests">কোনো রিকোয়েস্ট নেই</p>
           </div>
         </div>
       </section>
@@ -378,59 +536,81 @@
     </main>
 
     <!-- BOTTOM NAVIGATION -->
-    <nav class="bottom-nav">
-      <button class="nav-item active" data-nav="dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>হোম</span>
+    <nav class="bottom-nav glass-card neon-border">
+      <button class="nav-item active glass-nav-item" data-nav="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span data-i18n="nav_home">হোম</span>
       </button>
-      <button class="nav-item" data-nav="tasks">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        <span>টাস্ক</span>
+
+      <button class="nav-item glass-nav-item" data-nav="tasks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        <span data-i18n="nav_tasks">টাস্ক</span>
       </button>
-      <button class="nav-item" data-nav="withdraw">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-        <span>উইথড্র</span>
+
+      <button class="nav-item glass-nav-item" data-nav="withdraw">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="19" x2="12" y2="5"/>
+          <polyline points="5 12 12 5 19 12"/>
+        </svg>
+        <span data-i18n="nav_withdraw">উইথড্র</span>
       </button>
-      <button class="nav-item" data-nav="history">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <span>হিস্ট্রি</span>
+
+      <button class="nav-item glass-nav-item" data-nav="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span data-i18n="nav_history">হিস্ট্রি</span>
       </button>
-      <button class="nav-item hidden" id="navModPanel" data-nav="mod-panel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span>মড প্যানেল</span>
+
+      <button class="nav-item hidden glass-nav-item" id="navModPanel" data-nav="mod-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span data-i18n="nav_mod">মড প্যানেল</span>
       </button>
     </nav>
 
   </div><!-- /screen-app -->
-<!-- ========== REFERRAL PROMPT (Google Signup) ========== -->
-<div id="referralPromptModal" class="overlay hidden">
-  <div class="cooldown-box" style="max-width: 360px;">
-    <h3>🎁 Referral Code আছে?</h3>
-    <p style="margin-bottom: 16px; font-size: 13px;">কারো আমন্ত্রণে এসেছেন? কোড দিন — অথবা Skip করুন।</p>
-    <div class="input-group" style="text-align:left;">
-      <label>Referral Code (ঐচ্ছিক)</label>
-      <input type="text" id="promptRefCode" placeholder="যেমন: RITA96-A7B" autocomplete="off">
+
+  <!-- ========== REFERRAL PROMPT MODAL ========== -->
+  <div id="referralPromptModal" class="overlay glass-overlay hidden">
+    <div class="cooldown-box glass-card golden-glow glowing-border" style="max-width: 360px;">
+      <h3 class="glow-text-gold" data-i18n="prompt_ref_title">🎁 Referral Code আছে?</h3>
+      <p style="margin-bottom: 16px; font-size: 13px;" data-i18n="prompt_ref_desc">কারো আমন্ত্রণে এসেছেন? কোড দিন — অথবা Skip করুন।</p>
+      
+      <div class="input-group" style="text-align:left;">
+        <label data-i18n="label_ref_code_optional">Referral Code (ঐচ্ছিক)</label>
+        <input type="text" id="promptRefCode" class="glass-input" placeholder="যেমন: RITA96-A7B" data-i18n-placeholder="placeholder_prompt_ref" autocomplete="off">
+      </div>
+
+      <div id="promptRefMsg" class="error-box glass-card hidden"></div>
+
+      <div class="modal-actions" style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button id="btnSkipRef" class="btn btn-ghost glass-button" data-i18n="btn_skip">Skip</button>
+        <button id="btnApplyRef" class="btn btn-primary glass-button golden-glow gold-border" data-i18n="btn_apply">Apply</button>
+      </div>
     </div>
-    <div id="promptRefMsg" class="error-box hidden"></div>
-    <div class="modal-actions" style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-      <button id="btnSkipRef" class="btn btn-ghost">Skip</button>
-      <button id="btnApplyRef" class="btn btn-primary">Apply</button>
-    </div>
-  </div>
   </div>
   
   <!-- ========== COOLDOWN OVERLAY ========== -->
-  <div id="cooldownOverlay" class="overlay hidden">
-    <div class="cooldown-box">
-      <div class="cooldown-ring">
+  <div id="cooldownOverlay" class="overlay glass-overlay hidden">
+    <div class="cooldown-box glass-card neon-border glowing-border">
+      <div class="cooldown-ring animated-orb cyan-glow">
         <svg viewBox="0 0 100 100">
           <circle class="cd-track" cx="50" cy="50" r="42"/>
           <circle class="cd-progress" id="cdProgress" cx="50" cy="50" r="42"/>
         </svg>
-        <span id="cdNumber">60</span>
+        <span id="cdNumber" class="glow-text-cyan">60</span>
       </div>
-      <h3>একটু অপেক্ষা করুন</h3>
-      <p>পরবর্তী টাস্কের জন্য অপেক্ষা করুন</p>
+      <h3 class="glow-text" data-i18n="cooldown_title">একটু অপেক্ষা করুন</h3>
+      <p data-i18n="cooldown_desc">পরবর্তী টাস্কের জন্য অপেক্ষা করুন</p>
     </div>
   </div>
 
