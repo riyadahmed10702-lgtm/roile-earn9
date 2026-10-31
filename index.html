@@ -67,7 +67,7 @@
     </div>
 
     <div class="auth-container">
-      <!-- 3D Floating Coin Placeholder -->
+      <!-- 3D Floating Coin Presentation -->
       <div class="floating-coin-container">
         <div class="floating-3d-coin golden-glow animated-coin"></div>
       </div>
@@ -173,12 +173,14 @@
   <div id="screen-app" class="screen">
 
     <!-- APP HEADER -->
-    <header class="app-header glass-card">
+    <header class="app-header glass-card neon-border">
       <div class="header-left">
         <div class="header-logo animated-orb cyan-glow">R</div>
         <div class="header-info">
-          <h3 class="header-name glow-text" id="headerName" data-i18n="default_username">ব্যবহারকারী</h3>
-          <span class="header-status badge-active" id="headerStatus" data-i18n="status_active">সক্রিয়</span>
+          <!-- Fixed: removed data-i18n from headerName -->
+          <h3 class="header-name glow-text" id="headerName">ব্যবহারকারী</h3>
+          <!-- Fixed: removed data-i18n from headerStatus -->
+          <span class="header-status badge-active" id="headerStatus">সক্রিয়</span>
         </div>
       </div>
 
@@ -222,7 +224,7 @@
             <span class="currency">৳</span><span id="dashBalance">0.00</span>
           </div>
 
-          <!-- 3D Floating Coin Display Placeholder -->
+          <!-- 3D Floating Coin Display (Properly spaced, non-overlapping) -->
           <div class="dashboard-coin-holder">
             <div class="floating-3d-coin golden-glow animated-coin"></div>
           </div>
@@ -230,11 +232,13 @@
           <div class="balance-stats glass-card-nested">
             <div class="stat-item">
               <span class="stat-label" data-i18n="label_total_earned">মোট আয়</span>
+              <!-- Fixed: removed data-i18n from dashTotalEarned -->
               <span class="stat-value text-cyan" id="dashTotalEarned">৳0.00</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
               <span class="stat-label" data-i18n="label_total_withdrawn">মোট উইথড্র</span>
+              <!-- Fixed: removed data-i18n from dashTotalWithdrawn -->
               <span class="stat-value text-gold" id="dashTotalWithdrawn">৳0.00</span>
             </div>
           </div>
@@ -251,6 +255,7 @@
             </div>
             <div class="info-text">
               <span class="info-label" data-i18n="label_email">ইমেইল</span>
+              <!-- Fixed: verified no data-i18n on dashEmail -->
               <span class="info-value" id="dashEmail">-</span>
             </div>
           </div>
@@ -263,6 +268,7 @@
             </div>
             <div class="info-text">
               <span class="info-label" data-i18n="label_phone">মোবাইল</span>
+              <!-- Fixed: verified no data-i18n on dashPhone -->
               <span class="info-value" id="dashPhone">-</span>
             </div>
           </div>
@@ -277,7 +283,8 @@
             </div>
             <div class="info-text">
               <span class="info-label" data-i18n="label_role">ভূমিকা</span>
-              <span class="info-value" id="dashRole" data-i18n="role_user">ব্যবহারকারী</span>
+              <!-- Fixed: removed data-i18n from dashRole -->
+              <span class="info-value" id="dashRole">ব্যবহারকারী</span>
             </div>
           </div>
         </div>
@@ -292,7 +299,8 @@
             </div>
             <h4 class="glow-text" data-i18n="title_notice">নোটিশ বোর্ড</h4>
           </div>
-          <p id="dashNotice" class="notice-text" data-i18n="notice_loading">লোড হচ্ছে...</p>
+          <!-- Fixed: removed data-i18n from dashNotice -->
+          <p id="dashNotice" class="notice-text">লোড হচ্ছে...</p>
         </div>
 
         <!-- Cosmic Referral Card -->
@@ -314,12 +322,14 @@
           </div>
 
           <div class="referral-code-box glass-card neon-border">
+            <!-- Fixed: verified no data-i18n on refCode -->
             <span id="refCode" class="glow-text-cyan">LOADING...</span>
           </div>
 
           <div class="referral-stats">
             <div class="ref-stat glass-card-nested">
               <span class="ref-stat-label" data-i18n="label_referred">রেফার হয়েছে</span>
+              <!-- Fixed: verified no data-i18n on refCount -->
               <span class="ref-stat-value"><span id="refCount">0</span> <span data-i18n="unit_people">জন</span></span>
             </div>
             <div class="ref-stat glass-card-nested">
@@ -382,7 +392,8 @@
           </button>
         </div>
       </section>
-            <!-- ===== TASKS PAGE ===== -->
+
+      <!-- ===== TASKS PAGE ===== -->
       <section id="page-tasks" class="page">
         <div class="page-head">
           <h2 class="glow-text-cyan" data-i18n="tasks_page_title">উপলব্ধ টাস্ক</h2>
@@ -461,6 +472,7 @@
         <div class="withdraw-card glass-card golden-glow glowing-border">
           <div class="withdraw-balance glass-card-nested">
             <span data-i18n="label_avail_balance">উপলব্ধ ব্যালেন্স</span>
+            <!-- Fixed: verified no data-i18n on wdBalance -->
             <strong class="glow-text-gold">৳<span id="wdBalance">0.00</span></strong>
           </div>
 
@@ -535,7 +547,7 @@
 
     </main>
 
-    <!-- BOTTOM NAVIGATION -->
+    <!-- FLOATING PILL BOTTOM NAVIGATION -->
     <nav class="bottom-nav glass-card neon-border">
       <button class="nav-item active glass-nav-item" data-nav="dashboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
