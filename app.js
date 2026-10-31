@@ -56,11 +56,17 @@ const AppState = {
   listeners: { profile: null, notice: null, tasks: null, history: null, modPanel: null, referral: null },
   historyTab: 'earnings',
   _withdrawals: {},
-  linkOpened: false
+  linkOpened: false,
+  // Double-click action guards
+  _isClaiming: false,
+  _isWithdrawing: false,
+  _isLoggingIn: false,
+  _isRegistering: false,
+  _isModAction: false
 };
 
 /* ============================================================
-   TASK 2: BILINGUAL (EN/BN) TRANSLATIONS
+   BILINGUAL (EN/BN) TRANSLATIONS
    ============================================================ */
 const translations = {
   en: {
@@ -346,6 +352,9 @@ function t(key, params) {
   return str;
 }
 
+/* ============================================================
+   FIX 1: PREVENT LANGUAGE TOGGLE FROM OVERWRITING DYNAMIC DATA
+   ============================================================ */
 function setLanguage(lang) {
   if (!translations[lang]) lang = 'bn';
   AppState.lang = lang;
@@ -358,8 +367,18 @@ function setLanguage(lang) {
     else btn.classList.remove('active');
   });
 
-  // Static i18n replacements
+  // Dynamic IDs that must NEVER be overwritten with static i18n text
+  var dynamicElementIds = [
+    'dashNotice', 'refCode', 'refCount', 'dashBalance',
+    'dashTotalEarned', 'dashTotalWithdrawn', 'wdBalance',
+    'headerName', 'headerStatus', 'dashRole', 'dashEmail',
+    'dashPhone', 'refStatus', 'refSubtitle', 'timerNumber', 'cdNumber'
+  ];
+
+  // Static i18n replacements (skipping dynamic elements)
   $all('[data-i18n]').forEach(function (el) {
+    if (el.id && dynamicElementIds.indexOf(el.id) !== -1) return;
+    if (el.dataset.dynamic === 'true') return;
     var key = el.getAttribute('data-i18n');
     if (translations[lang] && translations[lang][key]) {
       el.textContent = translations[lang][key];
@@ -374,7 +393,12 @@ function setLanguage(lang) {
     }
   });
 
-  // Dynamic state updates
+  // Re-apply live dynamic data safely
+  if (AppState.settings && AppState.settings.notice) {
+    var nEl = $('dashNotice');
+    if (nEl) nEl.textContent = AppState.settings.notice;
+  }
+
   if (AppState.profile) {
     updateReferralUI(AppState.profile);
     var hName = $('headerName');
@@ -387,6 +411,14 @@ function setLanguage(lang) {
     if (dRole) {
       dRole.textContent = AppState.profile.role === 'admin' ? t('status_admin') : (AppState.profile.role === 'moderator' ? t('status_moderator') : t('role_user'));
     }
+    var dBal = $('dashBalance');
+    if (dBal) dBal.textContent = formatMoney(AppState.profile.balance);
+    var dEarn = $('dashTotalEarned');
+    if (dEarn) dEarn.textContent = '৳' + formatMoney(AppState.profile.totalEarned);
+    var dWd = $('dashTotalWithdrawn');
+    if (dWd) dWd.textContent = '৳' + formatMoney(AppState.profile.totalWithdrawn);
+    var wBal = $('wdBalance');
+    if (wBal) wBal.textContent = formatMoney(AppState.profile.balance);
   }
 
   renderTasks();
@@ -415,11 +447,16 @@ function navigateTo(pageName) {
   if (nav) nav.classList.add('active');
   window.scrollTo(0, 0);
 
+  // Fix 4: If navigating away from task viewer, stop timer lag
+  if (pageName !== 'task-viewer' && AppState.timerInterval) {
+    clearInterval(AppState.timerInterval);
+    AppState.timerInterval = null;
+  }
+
   if (pageName === 'history') attachHistoryListeners();
   if (pageName === 'mod-panel' && AppState.isModerator) attachModPanelListener();
 }
 
-/* TASK 1: Button text updates without destroying inner icons/spans */
 function setButtonText(btn, text) {
   if (!btn) return;
   var span = btn.querySelector('span');
@@ -479,7 +516,6 @@ function formatMoney(num) {
   return n.toFixed(2);
 }
 
-/* TASK 2: Bilingual Date Formatter */
 function formatDate(ts) {
   if (!ts) return '-';
   var d = new Date(ts);
@@ -543,6 +579,31 @@ function translateAuthError(code) {
 }
 
 /* ============================================================
+   FIX 3: PERFORMANCE & SINGLE-LISTENER MANAGEMENT
+   ============================================================ */
+function detachListener(key) {
+  var l = AppState.listeners[key];
+  if (l && l.ref && typeof l.ref.off === 'function') {
+    try { l.ref.off(l.event || 'value', l.cb); } catch (e) {}
+  }
+  AppState.listeners[key] = null;
+}
+
+function detachAllListeners() {
+  Object.keys(AppState.listeners).forEach(function (k) {
+    detachListener(k);
+  });
+  if (AppState.timerInterval) {
+    clearInterval(AppState.timerInterval);
+    AppState.timerInterval = null;
+  }
+  if (AppState.cdInterval) {
+    clearInterval(AppState.cdInterval);
+    AppState.cdInterval = null;
+  }
+}
+
+/* ============================================================
    REFERRAL SYSTEM & DEVICE LOCK LOGIC
    ============================================================ */
 function captureRefFromURL() {
@@ -594,24 +655,6 @@ function isDeviceLocked(deviceId, currentUid) {
   });
 }
 
-function detachAllListeners() {
-  Object.keys(AppState.listeners).forEach(function (k) {
-    var l = AppState.listeners[k];
-    if (l && l.ref && typeof l.ref.off === 'function') {
-      try { l.ref.off(l.event || 'value', l.cb); } catch (e) {}
-    }
-    AppState.listeners[k] = null;
-  });
-  if (AppState.timerInterval) {
-    clearInterval(AppState.timerInterval);
-    AppState.timerInterval = null;
-  }
-  if (AppState.cdInterval) {
-    clearInterval(AppState.cdInterval);
-    AppState.cdInterval = null;
-  }
-}
-
 function generateReferralCode(email) {
   var base = (email || 'user').split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
   if (base.length < 3) base = 'USER';
@@ -619,12 +662,17 @@ function generateReferralCode(email) {
   return base + '-' + rand;
 }
 
+/* ============================================================
+   FIX 2: IMMEDIATE UI UPDATES FOR REFERRAL DATA
+   ============================================================ */
 function updateReferralUI(data) {
   if (!data) return;
   var codeEl = $('refCode');
   if (codeEl) codeEl.textContent = data.referralCode || '---';
+
   var countEl = $('refCount');
   if (countEl) countEl.textContent = data.referralCount || 0;
+
   var statusEl = $('refStatus');
   var subEl = $('refSubtitle');
   var required = (AppState.settings && AppState.settings.requiredReferrals) || 0;
@@ -651,9 +699,13 @@ function attachReferralListener() {
   if (!AppState.user) return;
   var myCode = AppState.profile && AppState.profile.referralCode;
   if (!myCode) return;
-  if (AppState.listeners.referral && AppState.listeners.referral.ref) {
-    try { AppState.listeners.referral.ref.off('value', AppState.listeners.referral.cb); } catch (e) {}
+
+  // Prevent duplicate listener attachments to the same node
+  if (AppState.listeners.referral && AppState.listeners.referral.code === myCode) {
+    return;
   }
+  detachListener('referral');
+
   var ref = db.ref('referrals/' + myCode);
   var cb = function (snap) {
     var data = snap.val() || {};
@@ -662,6 +714,7 @@ function attachReferralListener() {
     var isUnlocked = (required === 0) || (count >= required);
     var needUnlock = isUnlocked && !(AppState.profile && AppState.profile.referralUnlocked);
 
+    // Immediately update UI
     updateReferralUI({
       referralCode: myCode,
       referralCount: count,
@@ -669,20 +722,26 @@ function attachReferralListener() {
     });
 
     if (AppState.profile && ((AppState.profile.referralCount || 0) !== count || needUnlock)) {
+      AppState.profile.referralCount = count;
+      if (needUnlock) AppState.profile.referralUnlocked = true;
+
       var updates = { referralCount: count };
       if (needUnlock) updates.referralUnlocked = true;
       db.ref('users/' + AppState.user.uid).update(updates).catch(function () {});
     }
   };
+
   ref.on('value', cb);
-  AppState.listeners.referral = { ref: ref, event: 'value', cb: cb };
+  AppState.listeners.referral = { ref: ref, event: 'value', cb: cb, code: myCode };
 }
 
 /* ============================================================
    AUTH: REGISTER & LOGIN (EMAIL / PASSWORD ONLY)
    ============================================================ */
 async function handleRegister() {
+  if (AppState._isRegistering) return;
   clearError('regError');
+
   var name = ($('regName').value || '').trim();
   var email = ($('regEmail').value || '').trim().toLowerCase();
   var phone = ($('regPhone').value || '').trim();
@@ -694,6 +753,7 @@ async function handleRegister() {
   if (password.length < 6) return showError('regError', t('err_pass'));
 
   var btn = $('btnRegister');
+  AppState._isRegistering = true;
   btn.disabled = true;
   setButtonText(btn, t('btn_waiting'));
 
@@ -771,7 +831,6 @@ async function handleRegister() {
     }
 
     try { await createdUser.updateProfile({ displayName: name }); } catch (e) {}
-
     showToast(t('msg_reg_success'), 'success');
   } catch (err) {
     console.error('[Register]', err);
@@ -783,13 +842,16 @@ async function handleRegister() {
       } catch (e) {}
     }
   } finally {
+    AppState._isRegistering = false;
     btn.disabled = false;
     setButtonText(btn, t('btn_register'));
   }
 }
 
 async function handleLogin() {
+  if (AppState._isLoggingIn) return;
   clearError('loginError');
+
   var email = ($('loginEmail').value || '').trim().toLowerCase();
   var password = $('loginPassword').value || '';
 
@@ -797,6 +859,7 @@ async function handleLogin() {
   if (!password) return showError('loginError', t('err_pass_required'));
 
   var btn = $('btnLogin');
+  AppState._isLoggingIn = true;
   btn.disabled = true;
   setButtonText(btn, t('btn_waiting'));
 
@@ -806,6 +869,7 @@ async function handleLogin() {
     console.error('[Login]', err);
     showError('loginError', translateAuthError(err.code));
   } finally {
+    AppState._isLoggingIn = false;
     btn.disabled = false;
     setButtonText(btn, t('btn_login'));
   }
@@ -825,7 +889,7 @@ async function handleLogout() {
 }
 
 /* ============================================================
-   TASK 3 (BUG FIX 4): REFERRAL PROMPT & LOOP FIX
+   REFERRAL PROMPT MODAL
    ============================================================ */
 function showReferralPrompt() {
   var modal = $('referralPromptModal');
@@ -918,16 +982,13 @@ async function skipReferralPrompt() {
 async function ensureProfile(user) {
   var ref = db.ref('users/' + user.uid);
   var snap = null;
-  var readFailed = false;
 
   try {
     snap = await ref.once('value');
   } catch (e) {
     console.error('[ensureProfile] read failed:', e);
-    readFailed = true;
+    return null;
   }
-
-  if (readFailed) return;
 
   if (snap && snap.exists()) {
     var existingData = snap.val() || {};
@@ -940,11 +1001,12 @@ async function ensureProfile(user) {
           referralUnlocked: existingData.referralUnlocked || false,
           referredBy: existingData.referredBy || ''
         });
+        existingData.referralCode = newCode;
       } catch (e) {
         console.warn('[ensureProfile] code update failed:', e);
       }
     }
-    return;
+    return existingData;
   }
 
   var deviceId = getOrCreateDeviceId();
@@ -952,7 +1014,7 @@ async function ensureProfile(user) {
   if (lockInfo.locked) {
     alert(t('err_device_locked'));
     await auth.signOut();
-    return;
+    return null;
   }
 
   var now = Date.now();
@@ -1014,8 +1076,10 @@ async function ensureProfile(user) {
       clearPendingRef();
       showToast(t('msg_ref_applied'), 'success');
     }
+    return profile;
   } catch (e) {
     console.error('[ensureProfile]', e);
+    return profile;
   }
 }
 
@@ -1051,7 +1115,7 @@ async function checkVPN() {
 }
 
 /* ============================================================
-   AUTH LISTENER & RESTORATION
+   AUTH LISTENER & FAST INITIALIZATION
    ============================================================ */
 function initAuthListener() {
   auth.onAuthStateChanged(async function (user) {
@@ -1066,19 +1130,32 @@ function initAuthListener() {
     }
 
     AppState.user = user;
-    await ensureProfile(user);
 
-    var prof = null;
-    try {
-      var profSnap = await db.ref('users/' + user.uid).once('value');
-      prof = profSnap.val();
-    } catch (e) { console.warn(e); }
+    // Connect notice immediately to prevent notice waiting
+    attachNoticeListener();
+
+    var prof = await ensureProfile(user);
 
     if (prof && prof.banned === true) {
       alert(t('err_banned'));
       detachAllListeners();
       await auth.signOut();
       return;
+    }
+
+    // Immediately render UI from fetched profile to eliminate "loading" delay
+    if (prof) {
+      AppState.profile = prof;
+      $('headerName').textContent = prof.name || t('default_username');
+      $('headerStatus').textContent = prof.role === 'admin' ? t('status_admin') : (prof.role === 'moderator' ? t('status_moderator') : t('status_active'));
+      $('dashBalance').textContent = formatMoney(prof.balance);
+      $('dashTotalEarned').textContent = '৳' + formatMoney(prof.totalEarned);
+      $('dashTotalWithdrawn').textContent = '৳' + formatMoney(prof.totalWithdrawn);
+      $('dashEmail').textContent = prof.email || '-';
+      $('dashPhone').textContent = prof.phone || '-';
+      $('dashRole').textContent = prof.role === 'admin' ? t('status_admin') : (prof.role === 'moderator' ? t('status_moderator') : t('role_user'));
+      $('wdBalance').textContent = formatMoney(prof.balance);
+      updateReferralUI(prof);
     }
 
     var deviceId = prof && prof.deviceId ? prof.deviceId : getOrCreateDeviceId();
@@ -1091,8 +1168,8 @@ function initAuthListener() {
 
     db.ref('users/' + user.uid + '/lastLogin').set(Date.now()).catch(function () {});
 
+    // Attach active real-time listeners cleanly
     attachProfileListener();
-    attachNoticeListener();
     attachTasksListener();
     checkModeratorStatus();
 
@@ -1133,7 +1210,9 @@ function initAuthListener() {
           AppState.currentTimerValue = 0;
           $('btnClaim').disabled = false;
           navigateTo('task-viewer');
-          if (window.AndroidApp) window.AndroidApp.showCrossButton();
+          if (window.AndroidApp && typeof window.AndroidApp.showCrossButton === 'function') {
+            try { window.AndroidApp.showCrossButton(); } catch (e) {}
+          }
         }
       } catch (e) { console.log('Restore task error', e); }
     } else {
@@ -1160,9 +1239,7 @@ function initAuthListener() {
    ============================================================ */
 function attachProfileListener() {
   if (!AppState.user) return;
-  if (AppState.listeners.profile && AppState.listeners.profile.ref) {
-    try { AppState.listeners.profile.ref.off('value', AppState.listeners.profile.cb); } catch (e) {}
-  }
+  detachListener('profile');
 
   var ref = db.ref('users/' + AppState.user.uid);
   var cb = function (snap) {
@@ -1177,6 +1254,7 @@ function attachProfileListener() {
       return;
     }
 
+    // Immediately reflect to UI
     $('headerName').textContent = data.name || t('default_username');
     $('headerStatus').textContent = data.role === 'admin' ? t('status_admin') : (data.role === 'moderator' ? t('status_moderator') : t('status_active'));
     $('dashBalance').textContent = formatMoney(data.balance);
@@ -1197,10 +1275,9 @@ function attachProfileListener() {
   AppState.listeners.profile = { ref: ref, event: 'value', cb: cb };
 }
 
+/* FIX 2: Notice Board Loads Instantly */
 function attachNoticeListener() {
-  if (AppState.listeners.notice && AppState.listeners.notice.ref) {
-    try { AppState.listeners.notice.ref.off('value', AppState.listeners.notice.cb); } catch (e) {}
-  }
+  detachListener('notice');
 
   var ref = db.ref('settings');
   var cb = function (snap) {
@@ -1212,7 +1289,11 @@ function attachNoticeListener() {
       cooldownDuration: typeof s.cooldownDuration === 'number' ? s.cooldownDuration : 60,
       requiredReferrals: typeof s.requiredReferrals === 'number' ? s.requiredReferrals : 0
     };
-    $('dashNotice').textContent = AppState.settings.notice;
+
+    var nEl = $('dashNotice');
+    if (nEl) {
+      nEl.textContent = AppState.settings.notice;
+    }
     updateReferralUI(AppState.profile || {});
   };
 
@@ -1221,9 +1302,7 @@ function attachNoticeListener() {
 }
 
 function attachTasksListener() {
-  if (AppState.listeners.tasks && AppState.listeners.tasks.ref) {
-    try { AppState.listeners.tasks.ref.off('value', AppState.listeners.tasks.cb); } catch (e) {}
-  }
+  detachListener('tasks');
 
   var ref = db.ref('tasks');
   var cb = function (snap) {
@@ -1236,7 +1315,7 @@ function attachTasksListener() {
 }
 
 /* ============================================================
-   TASK 1: RENDER TASKS (EXACT CSS CLASSES)
+   RENDER TASKS
    ============================================================ */
 function renderTasks() {
   var list = $('tasksList');
@@ -1275,7 +1354,7 @@ function renderTasks() {
 }
 
 /* ============================================================
-   TASK VIEWER, TIMER & TASK 3 (BUGS 2 & 5: BLEED & DAILY CAP)
+   FIX 4: ACCURATE TASK VIEWER & LAG-FREE TIMER
    ============================================================ */
 async function openTaskViewer(taskId) {
   var tsk = AppState.tasks[taskId];
@@ -1287,7 +1366,6 @@ async function openTaskViewer(taskId) {
     return;
   }
 
-  // Get true server time offset
   try {
     var snap = await db.ref('.info/serverTimeOffset').once('value');
     AppState.serverTimeOffset = snap.val() || 0;
@@ -1295,7 +1373,6 @@ async function openTaskViewer(taskId) {
     AppState.serverTimeOffset = 0;
   }
 
-  // TASK 3 (BUG FIX 5): Daily Cap Verification
   var currentServerTime = Date.now() + (AppState.serverTimeOffset || 0);
   var startOfDay = new Date(currentServerTime);
   startOfDay.setHours(0, 0, 0, 0);
@@ -1360,7 +1437,6 @@ async function openTaskViewer(taskId) {
     localStorage.setItem('activeTask', JSON.stringify(AppState.currentTask));
     localStorage.setItem('activeTaskStartTime', AppState.taskStartTime);
 
-    // TASK 3 (BUG FIX 2): Timer Bleed Fix
     AppState.currentTimerValue = AppState.settings.taskDuration || APP_CONST.taskDuration;
     startTaskTimer();
   }
@@ -1369,7 +1445,10 @@ async function openTaskViewer(taskId) {
 }
 
 function startTaskTimer() {
-  if (AppState.timerInterval) clearInterval(AppState.timerInterval);
+  if (AppState.timerInterval) {
+    clearInterval(AppState.timerInterval);
+    AppState.timerInterval = null;
+  }
 
   var duration = AppState.settings.taskDuration || APP_CONST.taskDuration;
   if (!AppState.currentTimerValue || AppState.currentTimerValue <= 0) {
@@ -1384,7 +1463,6 @@ function startTaskTimer() {
   var circumference = 2 * Math.PI * 52;
   if (circle) {
     circle.style.strokeDasharray = circumference;
-    circle.style.strokeDashoffset = 0;
   }
   if (number) number.textContent = AppState.currentTimerValue;
 
@@ -1393,6 +1471,8 @@ function startTaskTimer() {
     var remaining = initialTimerVal - elapsed;
 
     var val = remaining > 0 ? remaining : 0;
+    AppState.currentTimerValue = val;
+
     if (number) number.textContent = val;
     var progress = (duration - val) / duration;
     if (circle) circle.style.strokeDashoffset = circumference * Math.min(1, Math.max(0, progress));
@@ -1409,8 +1489,8 @@ function startTaskTimer() {
       var btn = $('btnClaim');
       if (btn) btn.disabled = false;
 
-      if (window.AndroidApp) {
-        window.AndroidApp.showCrossButton();
+      if (window.AndroidApp && typeof window.AndroidApp.showCrossButton === 'function') {
+        try { window.AndroidApp.showCrossButton(); } catch (e) {}
       }
 
       showToast(t('msg_timer_finished'), 'success');
@@ -1419,9 +1499,10 @@ function startTaskTimer() {
 }
 
 /* ============================================================
-   TASK 3 (BUG FIX 3): CLAIM REWARD (WITHOUT linkOpened CHECK)
+   FIX 5: CLAIM REWARD (IMMEDIATE LOCK & ATOMIC TRANSACTIONS)
    ============================================================ */
 async function handleClaimReward() {
+  if (AppState._isClaiming) return; // Prevent double clicks
   var btn = $('btnClaim');
   if (btn && btn.disabled) return;
   if (!AppState.currentTask || !AppState.user || !AppState.profile) return;
@@ -1435,6 +1516,7 @@ async function handleClaimReward() {
     return;
   }
 
+  AppState._isClaiming = true;
   if (btn) {
     btn.disabled = true;
     setButtonText(btn, t('btn_processing'));
@@ -1469,8 +1551,8 @@ async function handleClaimReward() {
     setCooldown(AppState.settings.cooldownDuration || APP_CONST.cooldown);
     showToast('৳' + formatMoney(reward) + ' ' + t('msg_earned'), 'success');
 
-    if (window.AndroidApp) {
-      window.AndroidApp.hideCrossButton();
+    if (window.AndroidApp && typeof window.AndroidApp.hideCrossButton === 'function') {
+      try { window.AndroidApp.hideCrossButton(); } catch (e) {}
     }
 
     localStorage.removeItem('activeTask');
@@ -1485,7 +1567,8 @@ async function handleClaimReward() {
     showToast(t('err_claim_failed'), 'error');
     if (btn) btn.disabled = false;
   } finally {
-    if (btn) setButtonText(btn, t('btn_claim_reward'));
+    AppState._isClaiming = false;
+    if (btn && AppState.currentTask) setButtonText(btn, t('btn_claim_reward'));
   }
 }
 
@@ -1517,6 +1600,7 @@ function getCooldownRemaining() {
 
 function showCooldownOverlay(seconds) {
   var overlay = $('cooldownOverlay');
+  if (!overlay) return;
   var num = $('cdNumber');
   var circle = $('cdProgress');
   var duration = seconds;
@@ -1529,11 +1613,15 @@ function showCooldownOverlay(seconds) {
   if (num) num.textContent = seconds;
   overlay.classList.remove('hidden');
 
-  if (AppState.cdInterval) clearInterval(AppState.cdInterval);
+  if (AppState.cdInterval) {
+    clearInterval(AppState.cdInterval);
+    AppState.cdInterval = null;
+  }
 
-  var left = seconds;
+  var start = Date.now();
   AppState.cdInterval = setInterval(function () {
-    left -= 1;
+    var elapsed = Math.floor((Date.now() - start) / 1000);
+    var left = duration - elapsed;
     if (left <= 0) {
       clearInterval(AppState.cdInterval);
       AppState.cdInterval = null;
@@ -1547,7 +1635,7 @@ function showCooldownOverlay(seconds) {
 }
 
 /* ============================================================
-   WITHDRAW LOGIC & TASK 3 (BUG FIX 6: ATOMIC DEDUCTION)
+   FIX 5: WITHDRAW LOGIC (IMMEDIATE LOCK & DOUBLE SUBMISSION GUARD)
    ============================================================ */
 async function autoAssignModerator() {
   try {
@@ -1572,7 +1660,9 @@ async function autoAssignModerator() {
 }
 
 async function handleWithdraw() {
+  if (AppState._isWithdrawing) return; // Prevent double clicks
   clearError('wdMessage');
+
   var uid = AppState.user ? AppState.user.uid : null;
   if (!uid || !AppState.profile) return showError('wdMessage', t('err_no_login'));
 
@@ -1596,27 +1686,26 @@ async function handleWithdraw() {
   }
 
   var btn = $('btnWithdraw');
-  btn.disabled = true;
-  setButtonText(btn, t('btn_processing'));
+  AppState._isWithdrawing = true;
+  if (btn) {
+    btn.disabled = true;
+    setButtonText(btn, t('btn_processing'));
+  }
 
   try {
     var myWdSnap = await db.ref('withdrawals').orderByChild('uid').equalTo(uid).once('value');
     var myWds = myWdSnap.val() || {};
     var hasPending = Object.keys(myWds).some(function (k) { return myWds[k] && myWds[k].status === 'pending'; });
     if (hasPending) {
-      btn.disabled = false;
-      setButtonText(btn, t('btn_submit_withdraw'));
       return showError('wdMessage', t('err_pending_wd_exists'));
     }
 
     var mod = await autoAssignModerator();
     if (!mod) {
-      btn.disabled = false;
-      setButtonText(btn, t('btn_submit_withdraw'));
       return showError('wdMessage', t('err_no_moderator'));
     }
 
-    // TASK 3 (BUG FIX 6): Atomic transaction for balance to prevent double deduction
+    // Atomic transaction for balance to prevent double deduction
     var balResult = await db.ref('users/' + uid + '/balance').transaction(function (curr) {
       var currentBal = Number(curr) || 0;
       if (currentBal < amount) return; // Abort
@@ -1624,8 +1713,6 @@ async function handleWithdraw() {
     });
 
     if (!balResult.committed) {
-      btn.disabled = false;
-      setButtonText(btn, t('btn_submit_withdraw'));
       return showError('wdMessage', t('err_insufficient_bal'));
     }
 
@@ -1659,7 +1746,7 @@ async function handleWithdraw() {
       $('wdAmount').value = '';
       navigateTo('history');
     } catch (writeErr) {
-      // Rollback balance in case network write fails
+      // Rollback balance on network failure
       await db.ref('users/' + uid + '/balance').transaction(function (curr) {
         return (Number(curr) || 0) + amount;
       }).catch(function () {});
@@ -1669,22 +1756,22 @@ async function handleWithdraw() {
     console.error('[Withdraw]', err);
     showError('wdMessage', t('err_wd_failed'));
   } finally {
-    btn.disabled = false;
-    setButtonText(btn, t('btn_submit_withdraw'));
+    AppState._isWithdrawing = false;
+    if (btn) {
+      btn.disabled = false;
+      setButtonText(btn, t('btn_submit_withdraw'));
+    }
   }
 }
 
 /* ============================================================
-   TASK 1: RENDER HISTORY (EXACT CSS CLASSES)
+   TRANSACTION HISTORY
    ============================================================ */
 function attachHistoryListeners() {
   if (!AppState.user) return;
+  detachListener('history');
+
   var uid = AppState.user.uid;
-
-  if (AppState.listeners.history && AppState.listeners.history.ref) {
-    try { AppState.listeners.history.ref.off('value', AppState.listeners.history.cb); } catch (e) {}
-  }
-
   var ref = db.ref('withdrawals').orderByChild('uid').equalTo(uid);
   var cb = function (snap) {
     var data = snap.val() || {};
@@ -1695,6 +1782,7 @@ function attachHistoryListeners() {
     AppState._withdrawals = withIds;
     if (AppState.historyTab === 'withdrawals') renderHistory();
   };
+
   ref.on('value', cb);
   AppState.listeners.history = { ref: ref, event: 'value', cb: cb };
   renderHistory();
@@ -1759,7 +1847,7 @@ function renderHistory() {
 }
 
 /* ============================================================
-   TASK 1: MOD PANEL (EXACT .mod-card CLASS)
+   MODERATOR PANEL
    ============================================================ */
 function checkModeratorStatus() {
   if (!AppState.user) return;
@@ -1778,12 +1866,9 @@ function checkModeratorStatus() {
 
 function attachModPanelListener() {
   if (!AppState.user || !AppState.isModerator) return;
+  detachListener('modPanel');
+
   var uid = AppState.user.uid;
-
-  if (AppState.listeners.modPanel && AppState.listeners.modPanel.ref) {
-    try { AppState.listeners.modPanel.ref.off('value', AppState.listeners.modPanel.cb); } catch (e) {}
-  }
-
   var ref = db.ref('withdrawals').orderByChild('assignedMod').equalTo(uid);
   var cb = function (snap) {
     var data = snap.val() || {};
@@ -1793,6 +1878,7 @@ function attachModPanelListener() {
       .sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
     renderModPanel(items);
   };
+
   ref.on('value', cb);
   AppState.listeners.modPanel = { ref: ref, event: 'value', cb: cb };
 }
@@ -1842,8 +1928,11 @@ function renderModPanel(items) {
 }
 
 async function handleModApprove(wdId) {
+  if (AppState._isModAction) return;
   if (!confirm(t('confirm_approve'))) return;
   if (!AppState.user) return;
+
+  AppState._isModAction = true;
   try {
     var wdSnap = await db.ref('withdrawals/' + wdId).once('value');
     var wd = wdSnap.val();
@@ -1870,14 +1959,18 @@ async function handleModApprove(wdId) {
   } catch (err) {
     console.error('[ModApprove]', err);
     showToast('Approval error', 'error');
+  } finally {
+    AppState._isModAction = false;
   }
 }
 
 async function handleModReject(wdId) {
+  if (AppState._isModAction) return;
   var reason = prompt(t('prompt_reject_reason'), '');
   if (reason === null) return;
   if (!AppState.user) return;
 
+  AppState._isModAction = true;
   try {
     var wdSnap = await db.ref('withdrawals/' + wdId).once('value');
     var wd = wdSnap.val();
@@ -1905,6 +1998,8 @@ async function handleModReject(wdId) {
   } catch (err) {
     console.error('[ModReject]', err);
     showToast('Rejection error', 'error');
+  } finally {
+    AppState._isModAction = false;
   }
 }
 
@@ -1912,7 +2007,6 @@ async function handleModReject(wdId) {
    EVENT LISTENERS & BINDINGS
    ============================================================ */
 function bindEvents() {
-  // Capture URL referral parameter
   try {
     var urlParams = new URLSearchParams(window.location.search);
     var refFromUrl = urlParams.get('ref');
@@ -1925,7 +2019,6 @@ function bindEvents() {
     }
   } catch (e) { console.warn('URL ref parse error:', e); }
 
-  // Language switch listeners
   $all('.lang-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var lang = btn.dataset.lang;
@@ -1933,7 +2026,6 @@ function bindEvents() {
     });
   });
 
-  // Auth form submissions
   $('btnLogin').addEventListener('click', handleLogin);
   $('btnRegister').addEventListener('click', handleRegister);
   $('btnLogout').addEventListener('click', handleLogout);
@@ -1953,7 +2045,6 @@ function bindEvents() {
   $('loginPassword').addEventListener('keydown', function (e) { if (e.key === 'Enter') handleLogin(); });
   $('regPassword').addEventListener('keydown', function (e) { if (e.key === 'Enter') handleRegister(); });
 
-  // Navigation
   $all('.nav-item').forEach(function (item) {
     item.addEventListener('click', function () {
       var page = item.dataset.nav;
@@ -1978,13 +2069,13 @@ function bindEvents() {
     localStorage.removeItem('activeTaskStartTime');
     AppState.currentTask = null;
     AppState.taskStartTime = null;
-    if (window.AndroidApp) {
-      window.AndroidApp.hideCrossButton();
+    AppState.currentTimerValue = 0;
+    if (window.AndroidApp && typeof window.AndroidApp.hideCrossButton === 'function') {
+      try { window.AndroidApp.hideCrossButton(); } catch (e) {}
     }
     navigateTo('tasks');
   });
 
-  // TASK 3 (BUG FIX 8): CPA Task Link UID / SubID replacement
   $('btnOpenLink').addEventListener('click', function () {
     if (!AppState.currentTask || !AppState.currentTask.link) return showToast(t('err_task_not_found'), 'error');
     AppState.linkOpened = true;
@@ -2004,7 +2095,7 @@ function bindEvents() {
 
   $('btnClaim').addEventListener('click', handleClaimReward);
 
-  // TASK 3 (BUG FIX 7): Visibility listener with server time offset
+  // FIX 4: Background/Foreground Visibility Sync without interval leaks
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && document.visibilityState === 'visible') {
       if (AppState.currentTask && AppState.currentTask.type === 'timer') {
@@ -2012,6 +2103,11 @@ function bindEvents() {
         var currentServerTime = Date.now() + (AppState.serverTimeOffset || 0);
         var elapsedSec = (currentServerTime - (AppState.taskStartTime || 0)) / 1000;
         var remaining = duration - Math.floor(elapsedSec);
+
+        if (AppState.timerInterval) {
+          clearInterval(AppState.timerInterval);
+          AppState.timerInterval = null;
+        }
 
         if (remaining <= 0) {
           AppState.currentTimerValue = 0;
@@ -2022,28 +2118,17 @@ function bindEvents() {
           if (circle) circle.style.strokeDashoffset = circumference;
           var btnClaim = $('btnClaim');
           if (btnClaim) btnClaim.disabled = false;
-          if (window.AndroidApp) {
-            window.AndroidApp.showCrossButton();
+          if (window.AndroidApp && typeof window.AndroidApp.showCrossButton === 'function') {
+            try { window.AndroidApp.showCrossButton(); } catch (e) {}
           }
-          if (AppState.timerInterval) {
-            clearInterval(AppState.timerInterval);
-            AppState.timerInterval = null;
-          }
-          handleClaimReward();
         } else {
           AppState.currentTimerValue = remaining;
-          var num = $('timerNumber');
-          if (num) num.textContent = remaining;
-          var circle = $('timerProgress');
-          var circumference = 2 * Math.PI * 52;
-          var progress = (duration - remaining) / duration;
-          if (circle) circle.style.strokeDashoffset = circumference * Math.min(1, Math.max(0, progress));
+          startTaskTimer();
         }
       }
     }
   });
 
-  // Payment method selection
   $all('.method-btn').forEach(function (mb) {
     mb.addEventListener('click', function () {
       $all('.method-btn').forEach(function (x) { x.classList.remove('active'); });
@@ -2053,13 +2138,11 @@ function bindEvents() {
 
   $('btnWithdraw').addEventListener('click', handleWithdraw);
 
-  // Referral prompt modal buttons
   var btnSkip = $('btnSkipRef');
   if (btnSkip) btnSkip.addEventListener('click', skipReferralPrompt);
   var btnApply = $('btnApplyRef');
   if (btnApply) btnApply.addEventListener('click', applyReferralFromPrompt);
 
-  // History tabs
   $all('.history-tab').forEach(function (tab) {
     tab.addEventListener('click', function () {
       $all('.history-tab').forEach(function (t) { t.classList.remove('active'); });
@@ -2069,7 +2152,6 @@ function bindEvents() {
     });
   });
 
-  // Referral share and copy
   var btnCopy = $('btnCopyRef');
   if (btnCopy) {
     btnCopy.addEventListener('click', function () {
@@ -2102,7 +2184,7 @@ function bindEvents() {
 }
 
 /* ============================================================
-   TASK 3 (BUG FIX 1): BOOTSTRAP (PREVENTS 1-SECOND LOGIN FLASH)
+   BOOTSTRAP
    ============================================================ */
 (function bootstrap() {
   getOrCreateDeviceId();
@@ -2118,7 +2200,6 @@ function bindEvents() {
     }
   });
 
-  // Wait for splash timer; let onAuthStateChanged handle the screen transitions smoothly
   setTimeout(function () {
     if (!auth || !db) {
       console.error('[Bootstrap] Firebase not ready');

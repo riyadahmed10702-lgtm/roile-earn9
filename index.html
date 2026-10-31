@@ -36,9 +36,9 @@
     <!-- Language Toggle Top Right -->
     <div class="splash-top-bar">
       <div class="lang-toggle glass-card neon-border">
-        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="btn lang-btn active" data-lang="en">EN</button>
         <span class="lang-divider">|</span>
-        <button class="lang-btn" data-lang="bn">BN</button>
+        <button class="btn lang-btn" data-lang="bn">BN</button>
       </div>
     </div>
 
@@ -57,12 +57,11 @@
 
   <!-- ========== LOGIN SCREEN ========== -->
   <div id="screen-login" class="screen">
-    <!-- Screen Header with Language Toggle -->
     <div class="screen-top-nav">
       <div class="lang-toggle glass-card neon-border">
-        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="btn lang-btn active" data-lang="en">EN</button>
         <span class="lang-divider">|</span>
-        <button class="lang-btn" data-lang="bn">BN</button>
+        <button class="btn lang-btn" data-lang="bn">BN</button>
       </div>
     </div>
 
@@ -111,12 +110,11 @@
 
   <!-- ========== REGISTER SCREEN ========== -->
   <div id="screen-register" class="screen">
-    <!-- Screen Header with Language Toggle -->
     <div class="screen-top-nav">
       <div class="lang-toggle glass-card neon-border">
-        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="btn lang-btn active" data-lang="en">EN</button>
         <span class="lang-divider">|</span>
-        <button class="lang-btn" data-lang="bn">BN</button>
+        <button class="btn lang-btn" data-lang="bn">BN</button>
       </div>
     </div>
 
@@ -177,23 +175,20 @@
       <div class="header-left">
         <div class="header-logo animated-orb cyan-glow">R</div>
         <div class="header-info">
-          <!-- Dynamic: No data-i18n -->
           <h3 class="header-name glow-text" id="headerName">ব্যবহারকারী</h3>
-          <!-- Dynamic: No data-i18n -->
           <span class="header-status badge-active" id="headerStatus">সক্রিয়</span>
         </div>
       </div>
 
       <div class="header-actions">
-        <!-- Bilingual Language Toggle in Main Header -->
         <div class="lang-toggle header-lang glass-card neon-border">
-          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="btn lang-btn active" data-lang="en">EN</button>
           <span class="lang-divider">|</span>
-          <button class="lang-btn" data-lang="bn">BN</button>
+          <button class="btn lang-btn" data-lang="bn">BN</button>
         </div>
 
-        <button id="btnLogout" class="btn-icon glass-button cyan-border" title="লগআউট" aria-label="লগআউট">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button id="btnLogout" class="btn btn-icon glass-button cyan-border" title="লগআউট" aria-label="লগআউট">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
             <polyline points="16 17 21 12 16 7"/>
             <line x1="21" y1="12" x2="9" y2="12"/>
@@ -224,7 +219,7 @@
             <span class="currency">৳</span><span id="dashBalance">0.00</span>
           </div>
 
-          <!-- 3D Floating Coin Display (Contained & Non-overlapping) -->
+          <!-- 3D Floating Coin Display -->
           <div class="dashboard-coin-holder">
             <div class="floating-3d-coin golden-glow animated-coin"></div>
           </div>
@@ -232,13 +227,11 @@
           <div class="balance-stats glass-card-nested">
             <div class="stat-item">
               <span class="stat-label" data-i18n="label_total_earned">মোট আয়</span>
-              <!-- Dynamic: No data-i18n -->
               <span class="stat-value text-cyan" id="dashTotalEarned">৳0.00</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
               <span class="stat-label" data-i18n="label_total_withdrawn">মোট উইথড্র</span>
-              <!-- Dynamic: No data-i18n -->
               <span class="stat-value text-gold" id="dashTotalWithdrawn">৳0.00</span>
             </div>
           </div>
@@ -248,34 +241,32 @@
         <div class="info-card glass-card neon-border">
           <div class="info-row">
             <div class="info-icon animated-orb cyan-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>
               </svg>
             </div>
             <div class="info-text">
               <span class="info-label" data-i18n="label_email">ইমেইল</span>
-              <!-- Dynamic: No data-i18n -->
               <span class="info-value" id="dashEmail">-</span>
             </div>
           </div>
 
           <div class="info-row">
             <div class="info-icon animated-orb cyan-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
               </svg>
             </div>
             <div class="info-text">
               <span class="info-label" data-i18n="label_phone">মোবাইল</span>
-              <!-- Dynamic: No data-i18n -->
               <span class="info-value" id="dashPhone">-</span>
             </div>
           </div>
 
           <div class="info-row">
             <div class="info-icon animated-orb cyan-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                 <path d="M2 17l10 5 10-5"/>
                 <path d="M2 12l10 5 10-5"/>
@@ -283,7 +274,6 @@
             </div>
             <div class="info-text">
               <span class="info-label" data-i18n="label_role">ভূমিকা</span>
-              <!-- Dynamic: No data-i18n -->
               <span class="info-value" id="dashRole">ব্যবহারকারী</span>
             </div>
           </div>
@@ -293,13 +283,12 @@
         <div class="notice-card glass-card neon-glow">
           <div class="notice-head">
             <div class="notice-icon animated-orb cyan-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 11l19-9-9 19-2-8-8-2z"/>
               </svg>
             </div>
             <h4 class="glow-text" data-i18n="title_notice">নোটিশ বোর্ড</h4>
           </div>
-          <!-- Dynamic: No data-i18n -->
           <p id="dashNotice" class="notice-text">লোড হচ্ছে...</p>
         </div>
 
@@ -307,7 +296,7 @@
         <div class="referral-card glass-card golden-glow glowing-border">
           <div class="referral-head">
             <div class="referral-icon animated-orb gold-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 12v10H4V12"/>
                 <path d="M2 7h20v5H2z"/>
                 <path d="M12 22V7"/>
@@ -322,33 +311,30 @@
           </div>
 
           <div class="referral-code-box glass-card neon-border">
-            <!-- Dynamic: No data-i18n -->
             <span id="refCode" class="glow-text-cyan">LOADING...</span>
           </div>
 
           <div class="referral-stats">
             <div class="ref-stat glass-card-nested">
               <span class="ref-stat-label" data-i18n="label_referred">রেফার হয়েছে</span>
-              <!-- Dynamic: No data-i18n -->
               <span class="ref-stat-value"><span id="refCount">0</span> <span data-i18n="unit_people">জন</span></span>
             </div>
             <div class="ref-stat glass-card-nested">
               <span class="ref-stat-label" data-i18n="label_ref_status">স্ট্যাটাস</span>
-              <!-- Dynamic: No data-i18n to prevent overwriting active progress -->
               <span id="refStatus" class="ref-status locked glass-badge">🔒 Locked</span>
             </div>
           </div>
 
           <div class="referral-actions">
             <button id="btnCopyRef" class="btn btn-info glass-button cyan-border">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
               <span data-i18n="btn_copy">কপি</span>
             </button>
             <button id="btnShareRef" class="btn btn-primary glass-button golden-glow gold-border">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="18" cy="5" r="3"/>
                 <circle cx="6" cy="12" r="3"/>
                 <circle cx="18" cy="19" r="3"/>
@@ -362,9 +348,9 @@
 
         <!-- Quick Cosmic Actions -->
         <div class="quick-actions">
-          <button class="quick-btn glass-button cyan-border neon-glow" data-nav="tasks">
+          <button class="btn quick-btn glass-button cyan-border neon-glow" data-nav="tasks">
             <div class="quick-icon animated-orb cyan-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 11l3 3L22 4"/>
                 <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
               </svg>
@@ -372,9 +358,9 @@
             <span data-i18n="nav_tasks">টাস্ক শুরু</span>
           </button>
 
-          <button class="quick-btn glass-button gold-border golden-glow" data-nav="withdraw">
+          <button class="btn quick-btn glass-button gold-border golden-glow" data-nav="withdraw">
             <div class="quick-icon animated-orb gold-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="19" x2="12" y2="5"/>
                 <polyline points="5 12 12 5 19 12"/>
               </svg>
@@ -382,9 +368,9 @@
             <span data-i18n="nav_withdraw">উইথড্র</span>
           </button>
 
-          <button class="quick-btn glass-button neon-border purple-glow" data-nav="history">
+          <button class="btn quick-btn glass-button neon-border purple-glow" data-nav="history">
             <div class="quick-icon animated-orb purple-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
@@ -412,8 +398,8 @@
       <!-- ===== TASK VIEWER PAGE ===== -->
       <section id="page-task-viewer" class="page">
         <div class="page-head viewer-header">
-          <button id="btnBackFromTask" class="btn-back glass-button cyan-border">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button id="btnBackFromTask" class="btn btn-back glass-button cyan-border">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="15 18 9 12 15 6"/>
             </svg>
             <span data-i18n="btn_back">ফিরে যান</span>
@@ -425,16 +411,14 @@
 
         <div class="task-viewer-card glass-card golden-glow glowing-border">
           <div class="viewer-head-area">
-            <!-- Dynamic: No data-i18n to prevent wiping loaded task name -->
             <h3 id="viewerTitle" class="viewer-title glow-text">টাস্ক</h3>
-            <!-- Dynamic: No data-i18n -->
             <p id="viewerDesc" class="viewer-desc">বিবরণ</p>
           </div>
 
           <!-- Isolated Timer Container -->
           <div class="timer-section-wrapper" id="viewerTimerWrapper">
             <div class="timer-wrap animated-orb cyan-glow">
-              <svg class="timer-svg" viewBox="0 0 120 120">
+              <svg class="timer-svg" width="130" height="130" viewBox="0 0 120 120">
                 <circle class="timer-track" cx="60" cy="60" r="52"/>
                 <circle class="timer-progress" id="timerProgress" cx="60" cy="60" r="52"/>
               </svg>
@@ -447,7 +431,7 @@
 
           <div class="viewer-actions">
             <button id="btnOpenLink" class="btn btn-info btn-block glass-button neon-glow cyan-border">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                 <polyline points="15 3 21 3 21 9"/>
                 <line x1="10" y1="14" x2="21" y2="3"/>
@@ -456,7 +440,7 @@
             </button>
 
             <button id="btnClaim" class="btn btn-primary btn-block glass-button golden-glow glowing-border gold-border" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 6L9 17l-5-5"/>
               </svg>
               <span data-i18n="btn_claim_reward">রিওয়ার্ড ক্লেইম করুন</span>
@@ -481,11 +465,11 @@
           <div class="input-group">
             <label data-i18n="label_payment_method">পেমেন্ট মেথড</label>
             <div class="method-select">
-              <button class="method-btn glass-button active" data-method="bkash">
+              <button class="btn method-btn glass-button active" data-method="bkash">
                 <span class="method-dot" style="background:#e2136e"></span> 
                 <span data-i18n="method_bkash">বিকাশ</span>
               </button>
-              <button class="method-btn glass-button" data-method="nagad">
+              <button class="btn method-btn glass-button" data-method="nagad">
                 <span class="method-dot" style="background:#f47b20"></span> 
                 <span data-i18n="method_nagad">নগদ</span>
               </button>
@@ -505,7 +489,7 @@
           <div id="wdMessage" class="error-box glass-card hidden"></div>
 
           <button id="btnWithdraw" class="btn btn-primary btn-block glass-button golden-glow gold-border">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="19" x2="12" y2="5"/>
               <polyline points="5 12 12 5 19 12"/>
             </svg>
@@ -522,8 +506,8 @@
         </div>
 
         <div class="history-tabs glass-card">
-          <button class="history-tab glass-button active" data-tab="earnings" data-i18n="tab_earnings">আয়</button>
-          <button class="history-tab glass-button" data-tab="withdrawals" data-i18n="tab_withdrawals">উইথড্র</button>
+          <button class="btn history-tab glass-button active" data-tab="earnings" data-i18n="tab_earnings">আয়</button>
+          <button class="btn history-tab glass-button" data-tab="withdrawals" data-i18n="tab_withdrawals">উইথড্র</button>
         </div>
 
         <div id="historyList" class="history-list">
@@ -549,42 +533,42 @@
 
     </main>
 
-    <!-- FLOATING PILL BOTTOM NAVIGATION -->
-    <nav class="bottom-nav glass-card neon-border">
-      <button class="nav-item active glass-nav-item" data-nav="dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- FLOATING PILL BOTTOM NAVIGATION (Contained in #screen-app) -->
+    <nav id="bottomNav" class="bottom-nav glass-card neon-border">
+      <button class="btn nav-item active glass-nav-item" data-nav="dashboard">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
         <span data-i18n="nav_home">হোম</span>
       </button>
 
-      <button class="nav-item glass-nav-item" data-nav="tasks">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="btn nav-item glass-nav-item" data-nav="tasks">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 11l3 3L22 4"/>
           <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
         </svg>
         <span data-i18n="nav_tasks">টাস্ক</span>
       </button>
 
-      <button class="nav-item glass-nav-item" data-nav="withdraw">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="btn nav-item glass-nav-item" data-nav="withdraw">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="19" x2="12" y2="5"/>
           <polyline points="5 12 12 5 19 12"/>
         </svg>
         <span data-i18n="nav_withdraw">উইথড্র</span>
       </button>
 
-      <button class="nav-item glass-nav-item" data-nav="history">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="btn nav-item glass-nav-item" data-nav="history">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/>
           <polyline points="12 6 12 12 16 14"/>
         </svg>
         <span data-i18n="nav_history">হিস্ট্রি</span>
       </button>
 
-      <button class="nav-item hidden glass-nav-item" id="navModPanel" data-nav="mod-panel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="btn nav-item hidden glass-nav-item" id="navModPanel" data-nav="mod-panel">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
         <span data-i18n="nav_mod">মড প্যানেল</span>
@@ -607,8 +591,12 @@
       <div id="promptRefMsg" class="error-box glass-card hidden"></div>
 
       <div class="modal-actions" style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <button id="btnSkipRef" class="btn btn-ghost glass-button" data-i18n="btn_skip">Skip</button>
-        <button id="btnApplyRef" class="btn btn-primary glass-button golden-glow gold-border" data-i18n="btn_apply">Apply</button>
+        <button id="btnSkipRef" class="btn btn-ghost glass-button">
+          <span data-i18n="btn_skip">Skip</span>
+        </button>
+        <button id="btnApplyRef" class="btn btn-primary glass-button golden-glow gold-border">
+          <span data-i18n="btn_apply">Apply</span>
+        </button>
       </div>
     </div>
   </div>
@@ -617,7 +605,7 @@
   <div id="cooldownOverlay" class="overlay glass-overlay hidden">
     <div class="cooldown-box glass-card neon-border glowing-border">
       <div class="cooldown-ring animated-orb cyan-glow">
-        <svg viewBox="0 0 100 100">
+        <svg width="96" height="96" viewBox="0 0 100 100">
           <circle class="cd-track" cx="50" cy="50" r="42"/>
           <circle class="cd-progress" id="cdProgress" cx="50" cy="50" r="42"/>
         </svg>
