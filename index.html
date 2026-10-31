@@ -18,7 +18,7 @@
 </head>
 <body class="galaxy-theme">
 
-  <!-- Ambient Space / Cosmic Background Decor -->
+  <!-- Ambient Space Background Layer (Isolated & Non-interactive) -->
   <div class="cosmic-background" aria-hidden="true">
     <div class="nebula-orb nebula-cyan"></div>
     <div class="nebula-orb nebula-gold"></div>
@@ -97,7 +97,7 @@
 
         <div id="loginError" class="error-box glass-card hidden"></div>
 
-        <button id="btnLogin" class="btn btn-primary btn-block glass-button neon-glow cyan-border" data-i18n="btn_login">
+        <button id="btnLogin" class="btn btn-primary btn-block glass-button neon-glow cyan-border">
           <span data-i18n="btn_login">লগইন</span>
         </button>
 
@@ -157,7 +157,7 @@
 
         <div id="regError" class="error-box glass-card hidden"></div>
 
-        <button id="btnRegister" class="btn btn-primary btn-block glass-button neon-glow cyan-border" data-i18n="btn_register">
+        <button id="btnRegister" class="btn btn-primary btn-block glass-button neon-glow cyan-border">
           <span data-i18n="btn_register">রেজিস্টার</span>
         </button>
 
@@ -177,9 +177,9 @@
       <div class="header-left">
         <div class="header-logo animated-orb cyan-glow">R</div>
         <div class="header-info">
-          <!-- Fixed: removed data-i18n from headerName -->
+          <!-- Dynamic: No data-i18n -->
           <h3 class="header-name glow-text" id="headerName">ব্যবহারকারী</h3>
-          <!-- Fixed: removed data-i18n from headerStatus -->
+          <!-- Dynamic: No data-i18n -->
           <span class="header-status badge-active" id="headerStatus">সক্রিয়</span>
         </div>
       </div>
@@ -224,7 +224,7 @@
             <span class="currency">৳</span><span id="dashBalance">0.00</span>
           </div>
 
-          <!-- 3D Floating Coin Display (Properly spaced, non-overlapping) -->
+          <!-- 3D Floating Coin Display (Contained & Non-overlapping) -->
           <div class="dashboard-coin-holder">
             <div class="floating-3d-coin golden-glow animated-coin"></div>
           </div>
@@ -232,13 +232,13 @@
           <div class="balance-stats glass-card-nested">
             <div class="stat-item">
               <span class="stat-label" data-i18n="label_total_earned">মোট আয়</span>
-              <!-- Fixed: removed data-i18n from dashTotalEarned -->
+              <!-- Dynamic: No data-i18n -->
               <span class="stat-value text-cyan" id="dashTotalEarned">৳0.00</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
               <span class="stat-label" data-i18n="label_total_withdrawn">মোট উইথড্র</span>
-              <!-- Fixed: removed data-i18n from dashTotalWithdrawn -->
+              <!-- Dynamic: No data-i18n -->
               <span class="stat-value text-gold" id="dashTotalWithdrawn">৳0.00</span>
             </div>
           </div>
@@ -255,7 +255,7 @@
             </div>
             <div class="info-text">
               <span class="info-label" data-i18n="label_email">ইমেইল</span>
-              <!-- Fixed: verified no data-i18n on dashEmail -->
+              <!-- Dynamic: No data-i18n -->
               <span class="info-value" id="dashEmail">-</span>
             </div>
           </div>
@@ -268,7 +268,7 @@
             </div>
             <div class="info-text">
               <span class="info-label" data-i18n="label_phone">মোবাইল</span>
-              <!-- Fixed: verified no data-i18n on dashPhone -->
+              <!-- Dynamic: No data-i18n -->
               <span class="info-value" id="dashPhone">-</span>
             </div>
           </div>
@@ -283,7 +283,7 @@
             </div>
             <div class="info-text">
               <span class="info-label" data-i18n="label_role">ভূমিকা</span>
-              <!-- Fixed: removed data-i18n from dashRole -->
+              <!-- Dynamic: No data-i18n -->
               <span class="info-value" id="dashRole">ব্যবহারকারী</span>
             </div>
           </div>
@@ -299,7 +299,7 @@
             </div>
             <h4 class="glow-text" data-i18n="title_notice">নোটিশ বোর্ড</h4>
           </div>
-          <!-- Fixed: removed data-i18n from dashNotice -->
+          <!-- Dynamic: No data-i18n -->
           <p id="dashNotice" class="notice-text">লোড হচ্ছে...</p>
         </div>
 
@@ -322,19 +322,20 @@
           </div>
 
           <div class="referral-code-box glass-card neon-border">
-            <!-- Fixed: verified no data-i18n on refCode -->
+            <!-- Dynamic: No data-i18n -->
             <span id="refCode" class="glow-text-cyan">LOADING...</span>
           </div>
 
           <div class="referral-stats">
             <div class="ref-stat glass-card-nested">
               <span class="ref-stat-label" data-i18n="label_referred">রেফার হয়েছে</span>
-              <!-- Fixed: verified no data-i18n on refCount -->
+              <!-- Dynamic: No data-i18n -->
               <span class="ref-stat-value"><span id="refCount">0</span> <span data-i18n="unit_people">জন</span></span>
             </div>
             <div class="ref-stat glass-card-nested">
               <span class="ref-stat-label" data-i18n="label_ref_status">স্ট্যাটাস</span>
-              <span id="refStatus" class="ref-status locked glass-badge" data-i18n="status_locked">🔒 Locked</span>
+              <!-- Dynamic: No data-i18n to prevent overwriting active progress -->
+              <span id="refStatus" class="ref-status locked glass-badge">🔒 Locked</span>
             </div>
           </div>
 
@@ -424,11 +425,13 @@
 
         <div class="task-viewer-card glass-card golden-glow glowing-border">
           <div class="viewer-head-area">
-            <h3 id="viewerTitle" class="viewer-title glow-text" data-i18n="viewer_title">টাস্ক</h3>
-            <p id="viewerDesc" class="viewer-desc" data-i18n="viewer_desc">বিবরণ</p>
+            <!-- Dynamic: No data-i18n to prevent wiping loaded task name -->
+            <h3 id="viewerTitle" class="viewer-title glow-text">টাস্ক</h3>
+            <!-- Dynamic: No data-i18n -->
+            <p id="viewerDesc" class="viewer-desc">বিবরণ</p>
           </div>
 
-          <!-- Isolated Timer Container for standard & CPA tasks -->
+          <!-- Isolated Timer Container -->
           <div class="timer-section-wrapper" id="viewerTimerWrapper">
             <div class="timer-wrap animated-orb cyan-glow">
               <svg class="timer-svg" viewBox="0 0 120 120">
@@ -472,7 +475,6 @@
         <div class="withdraw-card glass-card golden-glow glowing-border">
           <div class="withdraw-balance glass-card-nested">
             <span data-i18n="label_avail_balance">উপলব্ধ ব্যালেন্স</span>
-            <!-- Fixed: verified no data-i18n on wdBalance -->
             <strong class="glow-text-gold">৳<span id="wdBalance">0.00</span></strong>
           </div>
 
