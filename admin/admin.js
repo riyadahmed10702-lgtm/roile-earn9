@@ -178,33 +178,43 @@ function initAdminAuth() {
       return;
     }
 
-    // ডিভাইস লক চেকিং (ডাটাবেজের সাথে সিঙ্ক করে অন্য ডিভাইস আটকানো)
-    var deviceLock = localStorage.getItem('roile_admin_phone_lock');
-    try {
-      var lockSnap = await db.ref('settings/adminDeviceLock').once('value');
-      var registeredLock = lockSnap.val();
+// ডিভাইস লক চেকিং (মাস্টার অ্যাডমিন কখনো লকআউট হবে না)
+var deviceLock = localStorage.getItem('roile_admin_phone_lock');
+try {
+  var lockSnap = await db.ref('settings/adminDeviceLock').once('value');
+  var registeredLock = lockSnap.val();
 
-      if (!registeredLock) {
-        // প্রথমবার লগইন হলে এই ডিভাইসের লক কি ডাটাবেজে ও লোকালে সেভ হবে
-        var lockToken = deviceLock || ('locked_' + Math.random().toString(36).substring(2, 10));
-        await db.ref('settings/adminDeviceLock').set(lockToken);
-        localStorage.setItem('roile_admin_phone_lock', lockToken);
-      } else {
-        if (!deviceLock || deviceLock !== registeredLock) {
-          alert('❌ ডিভাইস লক সক্রিয়: এই ডিভাইস থেকে অ্যাডমিন অ্যাক্সেস অনুমোদিত নয়।');
-          await auth.signOut();
-          return;
-        }
-      }
-    } catch (err) {
-      console.warn('[AdminDeviceLock]', err);
-      if (!deviceLock) {
-        alert('❌ ডিভাইস লক সক্রিয়: অনুমোদিত ডিভাইস ছাড়া লগইন সম্ভব নয়।');
-        await auth.signOut();
-        return;
-      }
+  if (userEmail === ALLOWED_ADMIN_EMAIL) {
+    // মাস্টার অ্যাডমিন: লোকাল লক না মিললে নিজেই ফায়ারবেসের লক ওভাররাইট করে নেবে
+    if (!deviceLock || deviceLock !== registeredLock) {
+      var newLockToken = 'locked_' + Math.random().toString(36).substring(2, 10);
+      await db.ref('settings/adminDeviceLock').set(newLockToken);
+      localStorage.setItem('roile_admin_phone_lock', newLockToken);
     }
-
+  } else {
+    // অন্যান্য অ্যাডমিনদের জন্য কঠোর ডিভাইস লক
+    if (!deviceLock || !registeredLock) {
+      var lockToken = 'locked_' + Math.random().toString(36).substring(2, 10);
+      await db.ref('settings/adminDeviceLock').set(lockToken);
+      localStorage.setItem('roile_admin_phone_lock', lockToken);
+    } else if (deviceLock !== registeredLock) {
+      alert('❌ ডিভাইস লক সক্রিয়: এই ডিভাইস থেকে অ্যাডমিন অ্যাক্সেস অনুমোদিত নয়।');
+      await auth.signOut();
+      return;
+    }
+  }
+} catch (err) {
+  console.warn('[AdminDeviceLock]', err);
+  if (!deviceLock && userEmail === ALLOWED_ADMIN_EMAIL) {
+    var fallbackToken = 'locked_' + Math.random().toString(36).substring(2, 10);
+    localStorage.setItem('roile_admin_phone_lock', fallbackToken);
+    try {
+      await db.ref('settings/adminDeviceLock').set(fallbackToken);
+    } catch (e) {
+      console.warn('[AdminDeviceLock fallback]', e);
+    }
+  }
+  }
     AState.user = user;
     $('adminName').textContent = user.displayName || 'Admin';
     $('adminEmailDisplay').textContent = user.email || user.uid.slice(0, 12);
