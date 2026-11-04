@@ -2077,20 +2077,46 @@ function bindEvents() {
   });
 
   $('btnOpenLink').addEventListener('click', function () {
-    if (!AppState.currentTask || !AppState.currentTask.link) return showToast(t('err_task_not_found'), 'error');
-    AppState.linkOpened = true;
-
-    var url = AppState.currentTask.link;
-    if (AppState.currentTask.type === 'cpa' && AppState.user) {
-      var uid = AppState.user.uid;
-      if (url.indexOf('{uid}') !== -1) {
-        url = url.replace(/\{uid\}/g, encodeURIComponent(uid));
-      } else {
-        var separator = url.indexOf('?') !== -1 ? '&' : '?';
-        url = url + separator + 'subid=' + encodeURIComponent(uid);
-      }
+  if (!AppState.currentTask || !AppState.currentTask.link) return showToast(t('err_task_not_found'), 'error');
+  AppState.linkOpened = true;
+  
+  var url = AppState.currentTask.link;
+  if (AppState.currentTask.type === 'cpa' && AppState.user) {
+    var uid = AppState.user.uid;
+    if (url.indexOf('{uid}') !== -1) {
+      url = url.replace(/\{uid\}/g, encodeURIComponent(uid));
+    } else {
+      var separator = url.indexOf('?') !== -1 ? '&' : '?';
+      url = url + separator + 'subid=' + encodeURIComponent(uid);
     }
+  }
+  
+  // অ্যাপের ভেতরে Iframe-এ অ্যাড লোড করা
+  var adOverlay = document.getElementById('adOverlay');
+  var adIframe = document.getElementById('adIframe');
+  
+  if (adOverlay && adIframe) {
+    adIframe.src = url;
+    adOverlay.classList.remove('hidden');
+  } else {
+    // ফলব্যাক (যদি কোনো কারণে iframe না থাকে)
     window.open(url, '_blank', 'noopener,noreferrer');
+  }
+});
+
+// অ্যাড ক্লোজ করার লজিক
+var closeAdBtn = document.getElementById('closeAdBtn');
+if (closeAdBtn) {
+  closeAdBtn.addEventListener('click', function() {
+    var adOverlay = document.getElementById('adOverlay');
+    var adIframe = document.getElementById('adIframe');
+    if (adOverlay) adOverlay.classList.add('hidden');
+    if (adIframe) adIframe.src = ''; // ভিডিও বন্ধ করে দেবে
+    
+    // অ্যাড ক্লোজ করার পর টাইমার চেক করতে বলবে
+    showToast('Ad closed! Please wait for the timer to finish.', 'info');
+  });
+}
   });
 
   $('btnClaim').addEventListener('click', handleClaimReward);
